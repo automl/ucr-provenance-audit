@@ -9,14 +9,14 @@ This audit traces their sources, tasks and split evidence. Released with
 ## Main findings
 
 - **52 of 128 fail task construction:** staged or simulated demonstrations, recording attributes or source identities used as labels, or tasks redefined by the archive.
-- **41 have a leakage concern:** 17 contain test series identical to training series; 24 more share a source across the split. The remaining verdicts are 63 **Unclear**, 9 **Separated**, 7 **Related periods** and 8 **Generated**.
+- **41 have a leakage concern:** 17 contain test series identical to training series; 24 more share a source across the split. The remaining verdicts are 65 **Unclear**, 7 **Separated**, 7 **Related periods** and 8 **Generated**.
 - **Only 38 are real tasks on series sampled over time; 10 have a leakage concern.** The real-task group includes cases with undocumented label meaning.
 
 ![Figure 1: UCR datasets grouped by task construction and series index, with leakage concerns marked in white.](composition.png)
 
 Each square is a dataset: columns show the task, rows show whether the index is time, another ordered quantity or synthetic.
 Datasets with multiple construction mechanisms appear once, under their label mechanism.
-White means a leakage concern; black means none found, **not a verified clean split**: 51 of the 76 real-task datasets have Unclear splits.
+White means a leakage concern; black means none found, **not a verified clean split**: 53 of the 76 real-task datasets have Unclear splits.
 
 ## Files
 

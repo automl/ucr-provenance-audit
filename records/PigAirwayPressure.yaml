@@ -73,7 +73,9 @@ translation:
     level, which is the single most obvious haemodynamic consequence of blood loss.
   label_semantics_changed: >
     yes: the source study's binary bleeding/no-bleeding label was discarded and
-    replaced by a 52-way animal-identity label constructed by the curators.
+    replaced by a 52-way animal-identity label constructed by the curators
+    (Dau et al. 2019, Sec. VI-C4: "We created three data sets out of this source";
+    Fig. 10: "Class i is the ith individual pig").
 
 benchmark_task:
   description: >
@@ -157,4 +159,4 @@ references:
   - https://www.timeseriesclassification.com/description.php?Dataset=PigArtPressure
   - https://www.timeseriesclassification.com/description.php?Dataset=PigCVP
   - Guillame-Bert & Dubrawski, "Classification of Time Sequences using Graphs of Temporal Constraints", JMLR 18(1):4370-4403, 2017 (http://jmlr.org/papers/v18/15-403.html)
-  - Dau et al., "The UCR Time Series Archive", arXiv:1810.07758 (Sec. III-C, p. 3)
+  - Dau et al., "The UCR Time Series Archive", arXiv:1810.07758 (Sec. VI-C4, p. 10)

@@ -139,9 +139,9 @@ original_problem:
     VHF power to 'spike'. This attachment is followed by an exponentially shaped
     decline in the waveform." and "O Off-record: 800 microseconds was not enough
     to fully capture the lightning event." The underlying study is Eads, Hill,
-    Davis, Perkins, Ma, Porter & Theiler, Proc. SPIE 4787, 2002; I could NOT
-    read it (paywalled on the SPIE Digital Library, no open copy found), so this
-    record rests on the donor-written archive page.
+    Davis, Perkins, Ma, Porter & Theiler, Proc. SPIE 4787, 2002; it was read in
+    November 2026 (Sec. 2.3: seven classes, 143 records; Sec. 4.1: ten-fold random
+    cross-validation).
   provenance_confidence: medium
 
 translation:
@@ -180,9 +180,14 @@ verdict_rationale: >
   pairing).
 known_issues:
   - >
-    The primary source (Eads et al., Proc. SPIE 4787, 2002) is paywalled and was
-    not read; the preprocessing and class definitions come from the
-    donor-written archive page only.
+    The primary source (Eads et al., Proc. SPIE 4787, 2002) was read in November
+    2026. Sec. 2.3: "A total of 143 samples currently exist in the database"
+    (= 70 + 73, the archive's total). Sec. 4.1: "Ten-fold cross-validation was
+    used ... the lightning training data set was divided into ten equal
+    randomly-chosen partitions." The archive's fixed 70/73 split is therefore not
+    the source's evaluation protocol, and who built it and by what rule is undocumented. The class
+    table notes that "subsequent return strokes come after initial return
+    strokes", so strokes of one flash could fall on both sides of the split.
   - >
     Tiny and badly imbalanced: 70 train / 73 test across 7 classes (10 training
     instances per class on average), with a test default rate of 0.74. Single
@@ -230,5 +235,5 @@ references:
   Eads, Hill, Davis, Perkins, Ma, Porter & Theiler, "Genetic algorithms and
   support vector machines for time series classification", Proc. SPIE 4787,
   Applications and Science of Neural Networks, Fuzzy Systems and Evolutionary
-  Computation V, 2002, doi:10.1117/12.453526 — PAYWALLED, abstract page only
+  Computation V, 2002, doi:10.1117/12.453526 — read in November 2026 (Sec. 2.3, 4.1, 5)
 - Dau et al., "The UCR Time Series Archive", arXiv:1810.07758
