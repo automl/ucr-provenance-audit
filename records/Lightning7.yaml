@@ -199,7 +199,8 @@ known_issues:
   - >
     Lightning2 and Lightning7 come from the same FORTE campaign and the same
     pipeline and are not independent datasets. How Lightning2's two classes
-    relate to these seven is undocumented.
+    relate to these seven is inferred from the source's cloud-to-ground vs
+    intra-cloud subproblem (Eads et al. 2002, Sec. 5).
   - >
     Series length 319 here vs 637 for Lightning2, despite both archive pages
     giving the identical "smoothed to produce series of length 637" account —

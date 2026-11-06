@@ -39,9 +39,10 @@ original_problem:
     labels are lightning event types assigned by domain experts from the VHF
     radiation signature.
   prediction_target: >
-    lightning/transient event class; the archive's binary version's two classes
-    are NOT identified — the donor's own description says "Not exactly sure what
-    the two classes are"
+    lightning/transient event class; the source also poses a two-class
+    subproblem, cloud-to-ground vs intra-cloud events (Sec. 5), which the
+    archive's binary version most likely is; the donor's description says "Not
+    exactly sure what the two classes are"
   input_as_originally_posed: >
     VHF radio-frequency waveform recorded by the FORTE satellite, 800
     microseconds sampled at 50 MHz
@@ -95,7 +96,7 @@ translation:
 benchmark_task:
   description: >
     Classify a length-637 power-density trace of a FORTE transient into one of
-    two (undocumented) classes.
+    two classes, most likely cloud-to-ground vs intra-cloud events.
   is_same_as_original: narrowed
   # A two-class restriction of the seven-class expert labelling used for
   # Lightning7 and in the source study.
@@ -107,11 +108,13 @@ verdict_rationale: >
   electromagnetic transient, so the ordered axis is time.
 known_issues:
   - >
-    THE CLASS MEANINGS ARE UNKNOWN. The archive's own description ends "Not
-    exactly sure what the two classes are." A benchmark whose labels nobody can
-    name cannot support any domain claim; a human verifier should either recover
-    the mapping from the Lightning7 class list or mark the dataset as
-    label-opaque.
+    The archive does not name the classes: its description ends "Not exactly
+    sure what the two classes are." The source paper's two-class subproblem,
+    cloud-to-ground (CG, IR, SR) vs intra-cloud (I, I2, KM) events (Eads et al.
+    2002, Sec. 5), matches by record count (121) and is taken as the label
+    (author decision, November 2026). The class sizes (48/73) differ by one from
+    those the source's seven classes imply (49/72), so the mapping is inferred,
+    not confirmed.
   - >
     The primary source (Eads et al., Proc. SPIE 4787, 2002) was read in November
     2026. Its two-class subproblem (cloud-to-ground vs intra-cloud, the seven-class
@@ -125,7 +128,8 @@ known_issues:
   - >
     Lightning2 and Lightning7 are drawn from the same FORTE recording campaign
     and the same preprocessing pipeline; they are not independent datasets. How
-    Lightning2's two classes relate to Lightning7's seven is undocumented.
+    Lightning2's two classes relate to Lightning7's seven is inferred from the
+    source's cloud-to-ground vs intra-cloud subproblem (see above).
   - >
     Series length 637 here vs 319 for Lightning7 despite the archive giving the
     same "smoothed to produce series of length 637" account for both — one of

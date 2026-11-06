@@ -38,7 +38,7 @@ audit[audit.task_construction == "fail"][["dataset", "benchmark_target", "source
 - The authors set the questions, verdict rules and evidence standard, and wrote the [protocols](protocols/).
 - Agents drafted each record from the sources; a second agent checked it.
 - Claude Opus and GPT Astra independently re-derived every verdict from the records; a third agent reconciled them.
-- The authors decided all 262 uncertain verdicts (70 datasets), re-read sources for contested cases, and corrected 25 records.
+- The authors decided all 262 uncertain verdicts (70 datasets), re-read sources for contested cases, and corrected 28 records.
 
 If you find an error, please open an issue.
 
