@@ -1,0 +1,108 @@
+name: OSULeaf
+archive:
+- UCR
+archive_type_tag: IMAGE
+n_train: 200
+n_test: 242
+series_length: 427
+n_channels: 1
+n_classes: 6
+archive_page:
+  description: 'The OSULeaf data set consist of one dimensional outlines of leaves.
+
+    The series were obtained by color image segmentation and boundary
+
+    extraction (in the anti-clockwise direction) from digitized leaf
+
+    images of six classes: Acer Circinatum, Acer Glabrum, Acer
+
+    Macrophyllum, Acer Negundo, Quercus Garryana and Quercus Kelloggii
+
+    for the MSc thesis "Content-Based Image Retrieval: Plant Species
+
+    Identification" by A. Grandhi.'
+  donated_by: A. Grandhi
+  data_source_link: http://web.engr.oregonstate.edu/~tgd/leaves/
+  second_link: ''
+original_problem:
+  description: >
+    An MSc project at Oregon State University on content-based image retrieval
+    for plant species identification. The project page states the goal as
+    "Build and train a system using hand picked isolated leaves to predict
+    plant-species of unknown isolated leaves" and, harder, to predict species of
+    digitized herbarium samples; the reported accuracies are 96% (isolated ->
+    isolated) but only 59% (isolated -> herbarium). The method was already
+    sequence-based: "The features extracted by the first module are the angles
+    measured at each pixel point along the boundary of the leaves... The angles
+    recorded along a boundary form a sequence, which is input to the dynamic
+    program", matched with dynamic programming derived from DTW and DNA sequence
+    alignment.
+  prediction_target: plant species (four Acer and two Quercus species)
+  input_as_originally_posed: scanned image of a leaf (isolated hand-picked leaf or digitized herbarium sheet)
+  task_family: image-classification
+  stakeholder_and_use: botanists and herbaria wanting content-based retrieval/identification over digitized specimen collections
+  source: >
+    A. Grandhi, MSc project "Content-Based Image Retrieval: Plant Species
+    Identification", Oregon State University (project website read: index and
+    processing pages at web.engr.oregonstate.edu/~tgd/leaves/; the thesis PDF
+    itself was not retrieved).
+  provenance_confidence: medium
+
+translation:
+  transformation: [contour-unrolling, resampling, z-normalization]
+  what_the_x_axis_is: arc-length
+  sampling: >
+    Archive page: "The series were obtained by color image segmentation and
+    boundary extraction (in the anti-clockwise direction) from digitized leaf
+    images"; 427 points per outline.
+  information_lost_or_added: >
+    Venation, colour and texture - all diagnostic for species - are discarded;
+    only the boundary survives. Absolute leaf size is removed by
+    z-normalization. Note also that the archive series is a boundary-distance
+    representation, whereas the original work used the sequence of boundary
+    angles, so the released data is not the representation the source study
+    evaluated.
+  label_semantics_changed: "no"
+
+benchmark_task:
+  description: Classify a length-427 leaf-outline series into one of six species.
+  is_same_as_original: narrowed
+  # Same species labels; the archive drops the isolated-vs-herbarium transfer
+  # setting that was the interesting part of the original project.
+verdict: translated-modality
+verdict_rationale: >
+  A scanned leaf image reduced to its boundary traversed by arc-length; the
+  ordering is spatial and the source modality is an image.
+known_issues:
+  - The original project's central question was domain transfer between isolated leaves and herbarium sheets; the archive collapses both sources into one pool, so an unmeasured provenance variable may be a shortcut.
+  - Representation differs from the source work (boundary distance here vs. boundary angles there).
+  - Six species from only two genera; class balance across the 200/242 split is not documented.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.9587
+    acc_permuted: 0.5331
+    drop: 0.4256
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 5.8
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.9587
+    acc_raw_values: 0.4669
+    acc_summary_stats: 0.4215
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.4917
+    gap_summary: 0.5372
+    seed: 0
+    runtime_s: 5.3
+    run: '2026-09-04'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=OSULeaf
+  - 'Grandhi, "Content-Based Image Retrieval: Plant Species Identification" (OSU project pages) - https://web.engr.oregonstate.edu/~tgd/leaves/'
+  - Dau et al., "The UCR Time Series Archive", arXiv:1810.07758

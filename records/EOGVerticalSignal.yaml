@@ -1,0 +1,147 @@
+name: EOGVerticalSignal
+archive:
+- UCR
+archive_type_tag: EOG
+n_train: 362
+n_test: 362
+series_length: 1250
+n_channels: 1
+n_classes: 12
+archive_page:
+  description: 'The data are electrooculography signal (EOG). EOG is measurements of the electrical
+    potential between electrodes placed at points close to the eyes. The EOG recording device
+    is BlueGain, a commercial biomedical amplifier. Four measurement electrodes are attached
+    to the left, right, upper and lower sides of the left eye. A two-channel (horizontal and
+    vertical) EOG signal is obtained by taking the differences of the signals between the
+    electrodes on the left and right sides and those between the upper and lower sides, respectively.
+    The sampling rate was 1.0KHz.  We use the "Isolated data" described in [1]. This dataset
+    includes 6 participants eye-writing 12 types of Japanese Katakana strokes.  There are
+    12 classes. Class labels correspond to stroke ID. See Fig 7 in [1] for the mapping of
+    stroke ID - stroke type.   The vertical eye movement (up-down)  There is nothing to infer
+    from the order of examples in the train and test set.  Data created by Fang Fuming and
+    Takahiro Shinozaki (see [1]. Data edited by Hoang Anh Dau.  [1] Fang, Fuming, and Takahiro
+    Shinozaki. "Electrooculography-based continuous eye-writing recognition system for efficient
+    assistive communication systems." PloS one 13.2 (2018): e0192684.'
+  donated_by: E. Keogh, H. A. Dau
+  data_source_link: ''
+  second_link: ''
+original_problem:
+  description: >
+    Fang & Shinozaki built an eye-writing interface as an assistive communication
+    system. The stated motivation is "patients with amyotrophic lateral sclerosis
+    (ALS) who have lost nearly all their ability to control voluntary movements,
+    including loss of speech and handwriting but not eye movement": such a user can
+    still "write" characters by moving their eyes, and electrooculography picks the
+    movement up as a corneo-retinal potential. The paper's real problem is
+    *continuous* eye-writing recognition; the UCR dataset uses only its "isolated"
+    subset, in which each recording is a single Japanese Katakana stroke.
+  prediction_target: which of 12 Japanese Katakana stroke types was eye-written
+  input_as_originally_posed: two-channel electrooculography (EOG) recorded around the left eye
+  task_family: handwriting-recognition
+  # The schema's `handwriting-recognition` value is defined as "pen/character
+  # trajectories". Here the character trajectory is traced by the eye and sensed
+  # electrically rather than by a pen, so the fit is by target (a written stroke)
+  # rather than by sensor. See the record's final report note on this.
+  stakeholder_and_use: >
+    People with severe motor impairment (ALS, locked-in syndrome) and the clinicians
+    /engineers building assistive communication devices for them.
+  source: >
+    Fang, Fuming, and Takahiro Shinozaki, "Electrooculography-based continuous
+    eye-writing recognition system for efficient assistive communication systems",
+    PLoS ONE 13(2): e0192684, 2018. Read 2026-08 via the PLOS article page. Methods:
+    "A two-channel (horizontal and vertical) EOG signal was obtained by taking the
+    differences of the signals between the electrodes on the left and right sides and
+    those between the upper and lower sides, respectively"; the amplifier is a
+    "commercial biomedical amplifier, BlueGain (Cambridge Research Systems Ltd.)";
+    six healthy participants (one female, five male), aged 21-31, one of whom was an
+    eye-writing expert; Data recording > Isolated data: "In general, each of the 12
+    types of strokes was recorded 10 times for each participant, but a few strokes
+    were recorded nine or 11 times. In total, 724 strokes were recorded from all the
+    participants." Setup for isolated eye-writing recognition: "We used 10-fold
+    cross-validation for performance evaluation" and "Both the DTW template and HMM
+    were user-dependent" (how the folds were formed is not stated).
+  provenance_confidence: high
+
+translation:
+  transformation: [channel-selection, windowing, z-normalization]
+  what_the_x_axis_is: time
+  sampling: >
+    EOG sampled at 1.0 kHz in the original study; the archive series are length 1250
+    (1.25 s at 1 kHz), one isolated stroke per series. Whether the curators
+    downsampled or merely trimmed is not stated on the archive page.
+  information_lost_or_added: >
+    The signal is intrinsically two-dimensional - eye-writing a stroke is a planar
+    movement, and the horizontal and vertical channels are the two coordinates of it.
+    This dataset keeps only the vertical (up-down) component, so strokes that differ mainly along
+    the other axis become indistinguishable in principle. The archive also drops the
+    participant identifier, so subject-wise evaluation is impossible from the released
+    files, and it drops the continuous-writing context that the source paper's real
+    system operated in.
+  label_semantics_changed: "no"
+
+benchmark_task:
+  description: >
+    Classify a length-1250 single-channel EOG series (vertical (up-down) eye movement) into one
+    of 12 Katakana stroke types. 362 train / 362 test.
+  is_same_as_original: narrowed
+
+verdict: native-tsc
+verdict_rationale: >
+  A genuine biosignal recorded over time at 1 kHz, and the benchmark label is the
+  study's own label (stroke type); only the second channel and the continuous-writing
+  setting were removed.
+known_issues:
+  - >
+    EOGVerticalSignal and EOGHorizontalSignal are the two channels of the SAME recordings (identical 362/362
+    split, identical length, identical 12 classes). They are not independent
+    datasets: treating them as two entries in a 128-dataset average double-counts this
+    experiment, and the honest version of this problem is the bivariate one.
+  - >
+    Six participants, and 362 + 362 = 724 equals the total number of isolated strokes
+    the source reports, so train and test together hold all of them. How the strokes
+    were divided is not documented, and the archive drops the participant identifier,
+    so whether the same participants appear on both sides cannot be checked (a 3-vs-3
+    participant split would also give about 362 per side). If participants are shared,
+    nothing about generalisation to a new user is being measured - and an assistive
+    interface used by a new person would need a participant-disjoint split.
+  - >
+    One of the six participants was an eye-writing expert and the other five were
+    new to the task, so the data mixes two very different skill levels without a
+    way to separate them.
+  - >
+    Only the "isolated" subset is used. The paper's actual contribution was
+    continuous eye-writing recognition (segmentation plus recognition); the archive
+    task removes the segmentation problem, which is the hard part in deployment.
+  - >
+    Dropping one of the two axes is a real handicap for this task: Katakana strokes
+    are distinguished by direction in the plane.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.5221
+    acc_permuted: 0.4309
+    drop: 0.0912
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 5.7
+    run: '2026-09-03'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.5221
+    acc_raw_values: 0.3066
+    acc_summary_stats: 0.3425
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.2155
+    gap_summary: 0.1796
+    seed: 0
+    runtime_s: 8.9
+    run: '2026-09-03'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=EOGVerticalSignal
+  - https://www.timeseriesclassification.com/description.php?Dataset=EOGHorizontalSignal
+  - Fang & Shinozaki, "Electrooculography-based continuous eye-writing recognition system for efficient assistive communication systems", PLoS ONE 13(2):e0192684, 2018 (https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0192684)
+  - Dau et al., "The UCR Time Series Archive", arXiv:1810.07758 (Sec. III-C, p. 3)

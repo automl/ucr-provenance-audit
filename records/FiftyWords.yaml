@@ -1,0 +1,127 @@
+name: FiftyWords
+archive:
+- UCR
+archive_type_tag: IMAGE
+n_train: 450
+n_test: 455
+series_length: 270
+n_channels: 1
+n_classes: 50
+archive_page:
+  description: 'FiftyWords is a data set of word outlines taken from the George
+
+    Washington library by T. Rath and used in the paper "Word image
+
+    matching using dynamic time warping", CVPR 2003.
+
+
+    Each case is a word. A series is formed by taking the height
+
+    profile of the word.'
+  donated_by: T. Rath, R. Manmatha
+  data_source_link: http://ciir-publications.cs.umass.edu/pdf/MM-38.pdf
+  second_link: ''
+original_problem:
+  description: >
+    Word spotting in digitized historical manuscripts. Rath & Manmatha (CVPR
+    2003) wanted to index handwritten collections without transcribing them:
+    "Traditional libraries contain an enormous amount of handwritten historical
+    documents that they would like to make available electronically... such large
+    collections can only be accessed efficiently if a searchable or browsable
+    index exists" (Sec. 1). Their method matches images of words against each
+    other: "Although the matching of word images is in general a 2-dimensional
+    problem, we recast it as a 1-dimensional problem since there is a loose
+    association of image columns with the time that they were written over"
+    (Sec. 1). The images are George Washington's manuscripts, scanned by the
+    Library of Congress (Acknowledgments).
+  prediction_target: which word a word-image is an instance of (50 word types)
+  input_as_originally_posed: greyscale image of a segmented handwritten word on a manuscript page
+  task_family: image-classification
+  stakeholder_and_use: >
+    libraries and archives wanting searchable indexes over handwritten
+    collections that are too large to transcribe by hand
+  source: >
+    Rath & Manmatha, "Word image matching using dynamic time warping", CVPR 2003
+    (read via the UMass CIIR copy linked from the archive page).
+  provenance_confidence: high
+
+translation:
+  transformation: [contour-unrolling, resampling, z-normalization]
+  what_the_x_axis_is: position
+  sampling: >
+    One value per image column of the word image, resampled to 270 points.
+    Archive page: "A series is formed by taking the height profile of the word."
+    Rath & Manmatha compute this family of features per column - Sec. 2.6 "Word
+    Profiles": "Word profiles capture part of the outlining shape of a word. The
+    current word matching algorithm uses upper and lower word profiles: these two
+    features are calculated by going along the upper (lower) boundary of a word's
+    bounding box and recording for each image column the distance to the nearest
+    ink pixel in that column."
+  information_lost_or_added: >
+    Rath & Manmatha used four features per column (projection profile, upper and
+    lower word profiles, background-to-ink transitions) matched jointly; the
+    archive keeps a single univariate profile, so three quarters of the original
+    representation is gone. Interior stroke structure is not represented, and
+    word length/height are removed by resampling and z-normalization.
+  label_semantics_changed: "yes: a retrieval/matching problem was converted into closed-set classification over 50 chosen word types"
+
+benchmark_task:
+  description: Classify a length-270 word-profile series into one of 50 word classes.
+  is_same_as_original: different-task
+  # The original task was image-to-image matching for retrieval; the archive
+  # poses supervised classification over a fixed vocabulary of 50 words, which
+  # the source paper does not contain (see known_issues[0]).
+
+verdict: translated-modality
+verdict_rationale: >
+  The source is a scanned word image and the axis is horizontal image position;
+  the "loose association of image columns with the time they were written over"
+  is a proxy for writing order, not a recorded time axis.
+known_issues:
+  - >
+    The 50-word classification task is not in the source (checked 2026-11-02).
+    Rath & Manmatha evaluated retrieval on two 10-page test sets: "entire test
+    set 1 (2381 images total, 9 do not contain words)" and "entire test set 2
+    (3370 images total, 108 do not contain words)" (Sec. 3.1). "Each word in
+    the data sets was tagged with its ASCII equivalent ... Two word images were
+    considered relevant, if they have the same tags", and "each image in a data
+    set is viewed as a query which is used to retrieve similar images from the
+    entire collection", scored by average precision (Sec. 3.2). The paper has
+    no 50-word subset, no fixed vocabulary and no classes. The archive ships 905
+    series in 50 word classes; who chose the 50 words, and how, is not
+    documented (archive page: "taken from the George Washington library by T.
+    Rath"). The word tags are the source's; the closed set of 50 classes was
+    carved out of the retrieval pool afterwards.
+  - 'WordSynonyms is the same 905 instances (450+455 = 267+638) relabelled to 25 classes, mirrored left-right and re-split; the two datasets are not independent benchmarks.'
+  - 50 classes over 450 training instances - about nine examples per class.
+  - Single writer (the George Washington collection), so nothing tests generalization across hands.
+  - Word images are segmented automatically in the source pipeline; segmentation errors propagate into the series and are invisible in the archive.
+  - Class frequency follows natural word frequency, so classes are imbalanced in ways the archive does not document.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.8374
+    acc_permuted: 0.6835
+    drop: 0.1538
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 8.2
+    run: '2026-09-03'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.8374
+    acc_raw_values: 0.633
+    acc_summary_stats: 0.2352
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.2044
+    gap_summary: 0.6022
+    seed: 0
+    runtime_s: 12.4
+    run: '2026-09-03'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=FiftyWords
+  - Rath & Manmatha, "Word image matching using dynamic time warping", CVPR 2003 - http://ciir-publications.cs.umass.edu/pdf/MM-38.pdf (Sec. 3.1-3.2 read 2026-11-02 for the evaluation setup)

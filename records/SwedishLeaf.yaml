@@ -1,0 +1,172 @@
+name: SwedishLeaf
+archive:
+- UCR
+archive_type_tag: Image
+n_train: 500
+n_test: 625
+series_length: 128
+n_channels: 1
+n_classes: 15
+
+archive_page:
+  description: 'Swedish leaf is a set of leaf outlines donated by Oskar Söderkvist,
+
+    and used in his MSc thesis   Computer vision classifcation of leaves from swedish
+    trees , 2001.
+
+
+    The tree classes are
+
+    1. Ulmus carpinifolia
+
+    2. Acer
+
+    3. Salix aurita
+
+    4. Quercus
+
+    5. Alnus incana
+
+    6. Betula pubescens
+
+    7. Salix alba ''Sericea''
+
+    8. Populus tremula
+
+    9. Ulmus glabra
+
+    10. Sorbus aucuparia
+
+    11. Salix sinerea
+
+    12. Populus
+
+    13.Tilia
+
+    14. Sorbus intermedia
+
+    15. Fagus silvatica'
+  donated_by: O. Söderkvist
+  data_source_link: http://www.cvl.isy.liu.se/en/research/datasets/swedish-leaf/
+  second_link: ''
+original_problem:
+  description: >
+    Automatic identification of Swedish trees from images of single leaves,
+    built for Oskar Söderkvist's MSc thesis at Linköping's Computer Vision
+    Laboratory. Thesis abstract: "The aim of this master thesis is to classify
+    the tree class from an image of a leaf with a computer vision
+    classification system." Ch. 1, p.1: "The idea were borne at Swedish Museum
+    of Natural History and they contacted the Computer Vision Laboratory at
+    Linköping". Sec. 6.1.1, p.38: "The image samples are in the form of digital
+    images, obtained with a 300 dpi color scanner." The thesis evaluates hand-
+    designed shape descriptors with a feed-forward network on 15 tree classes,
+    75 leaves per class (Sec. 7.4, p.69). The archive attributes its leaf
+    outlines to this thesis; its numbered class list differs from the thesis
+    figure captions (see known_issues).
+  prediction_target: tree class (15 classes; four of the archive's class names give only a genus)
+  input_as_originally_posed: digital colour image of a single leaf on a white background, from a 300 dpi scanner (Sec. 6.1.1, p.38; Sec. 4.2.2, p.13)
+  task_family: image-classification
+  stakeholder_and_use: >
+    Swedish Museum of Natural History, which proposed the project; the stated
+    use is teaching, e.g. "help teachers at primary school when they want to
+    teach children about nature" (Ch. 1, p.1), with interested non-experts and
+    experts as further possible users (Sec. 2.3, p.8).
+  source: >
+    Söderkvist, O., "Computer Vision Classification of Leaves from Swedish
+    Trees", Master Thesis LiTH-ISY-3132, Linköping University, 20 Sep 2001
+    (Ch. 1; Sec. 6.1.1, pp.38-41 and Figs. 6.1-6.5; Sec. 7.3-7.4, pp.68-69).
+    Images are distributed by the Linköping Computer Vision Laboratory.
+  provenance_confidence: high
+  # High for the original problem (thesis read). Not for the archive's
+  # conversion of images to series or its class numbering: neither is
+  # documented in any consulted source.
+
+translation:
+  transformation: [contour-unrolling, z-normalization]
+  what_the_x_axis_is: arc-length
+  # Inference. The archive calls the data "leaf outlines"; no source says how
+  # the 128 values were computed or how they are indexed. arc-length is this
+  # repository's convention for contour-unrolled series; position along the
+  # contour is the most that is established.
+  sampling: >
+    128 values per leaf outline (archive page; shipped files). The conversion
+    (what each value measures, start point, direction, spacing, who made it) is
+    undocumented. The thesis itself never builds such a series; its own
+    border-sampling example uses 200 points (Sec. 4.2.3, p.14).
+  information_lost_or_added: >
+    Inference: the outline representation discards interior texture, venation
+    and colour. Every shipped series is z-normalized (measured: max |mean|
+    1.8e-8, sd 0.99999998-1.00000003), removing size and offset; this is a
+    per-series operation, unlike the thesis's rescaling of descriptor values
+    (Sec. 5.2).
+  label_semantics_changed: "no"
+  # Inference at task level: thesis and archive both classify tree classes.
+  # The exact class-number correspondence is unresolved (known_issues).
+
+benchmark_task:
+  description: Classify a univariate length-128 leaf-outline series into one of the archive's 15 tree classes.
+  is_same_as_original: different-task
+
+verdict: translated-modality
+verdict_rationale: >
+  The original problem classifies scanned leaf images; the benchmark
+  represents each leaf by a fixed-length outline series whose index is a
+  position along the contour, not time.
+known_issues:
+  - >
+    Exact duplicates (measured 2026-11-01): 1122 unique series out of 1125;
+    three identical pairs, all class 8. Two test series equal a training series
+    (2 of 625: TRAIN line 6 = TEST line 244, TRAIN line 340 = TEST line 408,
+    1-based); one pair lies within test (TEST 112 = TEST 220). No duplicate
+    group mixes labels.
+  - >
+    The class lists disagree. The archive (and the Linköping lab page) number
+    the classes 1. Ulmus carpinifolia ... 15. Fagus silvatica; the thesis
+    figure captions (Figs. 6.1-6.5, pp.39-41) give different names for classes
+    3, 6, 7, 9, 11, 12, 13 and 14 (e.g. thesis "tree class 9 is Corylus
+    avellana", archive "9. Ulmus glabra"), and genus versus species only for
+    classes 2 and 4. Which assignment the shipped labels follow is undocumented.
+  - >
+    The archive split is not documented and differs from the thesis evaluation.
+    The thesis has 75 leaves per class (Sec. 7.4, p.69) and says "The test has
+    been done with 50 samples from each tree class" (Sec. 6.1.1, p.38); its
+    Table 7.1 (p.69) reports per-class results in steps of 4 % (inference: 25
+    held-out leaves per class, i.e. 750/375, not stated by the thesis; the
+    class-9 row of Table 7.1 sums to 108, not 100). The archive ships 500/625
+    with every class at 75 but 26-42 training series per class; who made this
+    split and how is undocumented.
+  - >
+    Inference: 15 classes x 75 matches the 75 image files per class at the
+    Linköping lab and the shipped totals, consistent with one series per
+    scanned leaf; the image-to-series correspondence is not documented, so
+    whether leaves of one tree fall on both sides of the split is unknown.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.9616
+    acc_permuted: 0.9072
+    drop: 0.0544
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 6.1
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.9616
+    acc_raw_values: 0.8544
+    acc_summary_stats: 0.688
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.1072
+    gap_summary: 0.2736
+    seed: 0
+    runtime_s: 6.8
+    run: '2026-09-04'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=SwedishLeaf
+  - https://timeseriesclassification.com/aeon-toolkit/SwedishLeaf.zip (shipped description and train/test files)
+  - Söderkvist (2001), Master Thesis LiTH-ISY-3132, Linköping University - http://www.diva-portal.org/smash/get/diva2:303038/FULLTEXT01.pdf
+  - Linköping Computer Vision Laboratory, Swedish leaf dataset page - https://www.cvl.isy.liu.se/en/research/datasets/swedish-leaf/

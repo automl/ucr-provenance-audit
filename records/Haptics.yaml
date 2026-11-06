@@ -1,0 +1,128 @@
+name: Haptics
+archive:
+- UCR
+archive_type_tag: MOTION
+n_train: 155
+n_test: 308
+series_length: 1092
+n_channels: 1
+n_classes: 5
+archive_page:
+  description: 'Data is taken from 5 people entering their passgraph (a code to access a system
+    protected by a graphical authentication system) on a
+
+    touchscreen. The data is the X axis movement only.'
+  donated_by: ''
+  data_source_link: ''
+  second_link: ''
+original_problem:
+  description: >
+    Behavioural biometrics on a touchscreen. The archive page is the only description
+    available: "Data is taken from 5 people entering their passgraph (a code to access
+    a system protected by a graphical authentication system) on a touchscreen. The
+    data is the X axis movement only." So the underlying setting is graphical-password
+    entry and the archive's five classes are the five people. No donor is listed, no
+    source or second link is given, and no paper, thesis or dataset page describing
+    this collection was found; searches for the UCR "Haptics" dataset return only
+    unrelated haptics-rendering datasets and generic graphical-password literature.
+  prediction_target: >
+    Which of five people entered the passgraph, i.e. user identity from touch
+    dynamics. It is not documented whether the five people entered the *same*
+    passgraph or each their own - which matters enormously, because in the latter
+    case the classifier can recognise the drawn shape instead of the person.
+  input_as_originally_posed: finger trajectory on a touchscreen while entering a graphical password
+  task_family: biometric-identification
+  # `other` = behavioural-biometric authentication from a touch gesture. The target
+  # is a person's identity, not an activity, a character or a clinical state, so
+  # none of the existing values applies. Reported as a vocabulary gap (this cluster
+  # contains several identity-target datasets).
+  stakeholder_and_use: >
+    Designers of graphical/behavioural authentication systems, who would use such a
+    model as a second factor (is this the enrolled user drawing the pattern?).
+  source: >
+    timeseriesclassification.com description page only (read 2026-08). No primary
+    source found; the archive page lists no donor and no data-source link.
+  provenance_confidence: low
+  # Missing: who collected it, when, on what device, at what sampling rate, whether
+  # the five users shared a passgraph, and how a "series" was segmented. Also note
+  # that the name is misleading - nothing haptic (force, vibration, tactile
+  # feedback) is recorded; the data is touch *position*.
+
+translation:
+  transformation: [channel-selection, z-normalization]
+  what_the_x_axis_is: time
+  sampling: >
+    Length-1092 series, one per password entry. Sampling rate and real-time duration
+    are undocumented.
+  information_lost_or_added: >
+    A passgraph entry is a 2D gesture; only the X coordinate is released, so the drawn
+    shape is only half observed and two different passgraphs that differ mainly in Y
+    become indistinguishable. Pressure and timing metadata, which is what makes touch
+    biometrics work in the literature, are not present either. Z-normalisation removes
+    absolute screen position and stroke scale.
+  label_semantics_changed: >
+    yes: to the extent an original problem existed it was authentication (is this the
+    enrolled user?); the archive poses it as a 5-way closed-set identification.
+
+benchmark_task:
+  description: >
+    Classify a length-1092 single-axis touchscreen trajectory as one of five users.
+    155 train / 308 test.
+  is_same_as_original: different-task
+
+verdict: native-tsc
+verdict_rationale: >
+  Finger position sampled over time while drawing a gesture - a genuinely temporal
+  signal with time on the x-axis - so native-tsc, though almost nothing about the
+  collection is documented.
+known_issues:
+  - >
+    No provenance at all: no donor, no source link, no paper. Every claim about this
+    dataset beyond "five people, touchscreen, X axis" rests on one sentence on the
+    archive page.
+  - >
+    The class is user identity with only five users and repeated entries per user, so
+    train and test contain repetitions of the same person performing the same gesture.
+    Identity shortcut is the task; there is no held-out user.
+  - >
+    Critical ambiguity: if each user has their own passgraph, the classifier is
+    recognising a drawn shape (a 5-way shape-classification problem), not a person.
+    The archive text ("their passgraph") suggests per-user patterns but does not say
+    so unambiguously. A verifier should settle this before the dataset is described as
+    biometric.
+  - >
+    The dataset name "Haptics" is a misnomer - no force, vibration or tactile channel
+    is recorded - and the archive type tag is MOTION. Both mislabel the modality.
+  - >
+    Only the X axis of a 2D gesture is released, which plausibly explains why
+    published error rates on this dataset are among the worst in the archive
+    (1NN-DTW error around 0.59-0.63 in the UCR briefing document's results table).
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.5292
+    acc_permuted: 0.461
+    drop: 0.0682
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 5.9
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.5292
+    acc_raw_values: 0.4578
+    acc_summary_stats: 0.3084
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.0714
+    gap_summary: 0.2208
+    seed: 0
+    runtime_s: 4.0
+    run: '2026-09-04'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=Haptics
+  - UCR Time Series Classification Archive Briefing Document 2018 (https://www.cs.ucr.edu/~eamonn/time_series_data_2018/BriefingDocument2018.pdf) - baseline error table and the "with z-normalization" exemplar plot for Haptics
+  - Dau et al., "The UCR Time Series Archive", arXiv:1810.07758 (Sec. III-C, p. 3)

@@ -1,0 +1,104 @@
+name: ArrowHead
+archive:
+- UCR
+archive_type_tag: IMAGE
+n_train: 36
+n_test: 175
+series_length: 251
+n_channels: 1
+n_classes: 3
+archive_page:
+  description: The arrowhead data consists of outlines of the images of arrowheads. The shapes
+    of the projectile points are converted into a time series using the angle-based method.
+    The classification of projectile points is an important topic in anthropology. The classes
+    are based on shape distinctions  such as the presence and location of a notch in the arrow.
+    The problem in the repository is a length normalised version of that used in Ye09shapelets.
+    The three classes are called "Avonlea", "Clovis" and "Mix"."
+  donated_by: L. Ye, E. Keogh
+  data_source_link: http://alumni.cs.ucr.edu/~lexiangy/shapelet.html
+  second_link: http://alumni.cs.ucr.edu/~lexiangy/Shapelet/Proj_Point_Review.pdf
+original_problem:
+  description: >
+    Classification of stone projectile points (arrowheads), a standard task in
+    archaeology/anthropology: points are assigned to traditions on the basis of
+    shape, which in turn indexes the group that made them and the period they
+    were in use. Ye & Keogh (KDD 2009, Sec. 5.2) state: "Projectile point
+    (arrowhead) classification is an important topic in anthropology... Projectile
+    points can be divided into different classes based on the location they are
+    found, the group that created them, and the date they were in use, etc."
+    The discriminating shape features were confirmed by domain experts: "the
+    Clovis projectile points can be distinguished from the others by an
+    un-notched hafting area near the bottom connected by a deep concave bottom
+    end", "confirmed by physical anthropologists Dr. Sang-Hee Lee and Taryn
+    Rampley of UCR".
+  prediction_target: projectile-point class (Avonlea, Clovis, Mix)
+  input_as_originally_posed: >
+    image of a stone projectile point; the test set also includes broken points
+    and line drawings taken from anthropologists' field notes
+  task_family: image-classification
+  stakeholder_and_use: archaeologists / physical anthropologists cataloguing lithic assemblages
+  source: >
+    Ye & Keogh, "Time Series Shapelets: A New Primitive for Data Mining",
+    KDD 2009, Sec. 5.2 (read); the authors also reference their own extended
+    review of the projectile-point literature.
+  provenance_confidence: high
+
+translation:
+  transformation: [contour-unrolling, resampling, z-normalization]
+  what_the_x_axis_is: arc-length
+  sampling: >
+    Ye & Keogh, Sec. 5.2: "We convert the shapes of the projectile points to a
+    time series using the angle-based method [8]. We then randomly created a
+    36/175 train/test split." The archive version is length-normalised relative
+    to that paper (251 points).
+  information_lost_or_added: >
+    Absolute size is discarded, although point size is archaeologically
+    meaningful; material, flaking pattern and surface texture are not
+    represented at all. Broken points contribute outlines that are not the
+    outline of the artefact as made.
+  label_semantics_changed: "no"
+
+benchmark_task:
+  description: Classify a length-251 outline series as Avonlea, Clovis or Mix.
+  is_same_as_original: narrowed
+  # Same three-class problem as the shapelet paper, but length-normalised.
+
+verdict: translated-modality
+verdict_rationale: >
+  The original object is a photographed/drawn artefact; the series is its
+  outline traversed by arc-length, so the axis is a spatial parameterization of
+  an image, not time.
+known_issues:
+  - Only 36 training instances against 175 test instances.
+  - Test set deliberately mixes clean outlines with broken points and hand drawings from field notes - a provenance shift between train and test that is not part of the stated task.
+  - '"Mix" is a catch-all class rather than a coherent tradition.'
+  - Archive version is a length-normalised variant of the data used in Ye & Keogh 2009, so results are not directly comparable to that paper.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.8629
+    acc_permuted: 0.7771
+    drop: 0.0857
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 4.7
+    run: '2026-09-03'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.8629
+    acc_raw_values: 0.3943
+    acc_summary_stats: 0.3943
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.4686
+    gap_summary: 0.4686
+    seed: 0
+    runtime_s: 2.4
+    run: '2026-09-03'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=ArrowHead
+  - 'Ye & Keogh, "Time Series Shapelets: A New Primitive for Data Mining", KDD 2009 - https://www.cs.ucr.edu/~eamonn/shaplet.pdf'
+  - Keogh et al., "LB_Keogh supports exact indexing of shapes under rotation invariance with arbitrary representations and distance measures", VLDB 2006 (the angle-based conversion referenced by Ye & Keogh)

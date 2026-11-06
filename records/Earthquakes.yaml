@@ -1,0 +1,176 @@
+name: Earthquakes
+archive:
+- UCR
+archive_type_tag: SENSOR
+n_train: 322
+n_test: 139
+series_length: 512
+n_channels: 1
+n_classes: 2
+archive_page:
+  description: 'The earthquake classification problem involves predicting whether a
+
+    major event is about to occur based on the most recent readings in
+
+    the surrounding area. The data is taken from Northern California
+
+    Earthquake Data Center and each data is an averaged
+
+    reading for one hour, with the first reading taken on Dec 1st 1967,
+
+    the last in 2003. We transform this single time series into a
+
+    classification problem by first defining a major event as any
+
+    reading of over 5 on the Rictor scale. Major events are often
+
+    followed by aftershocks. The physics of these are well understood
+
+    and their detection is not the objective of this exercise. Hence we
+
+    consider a positive case to be one where a major event is not
+
+    preceded by another major event for at least 512 hours. To
+
+    construct a negative case, we consider instances where there is a
+
+    reading below 4 (to avoid blurring of the boundaries between major
+
+    and non major events) that is preceded by at least 20 readings in
+
+    the previous 512 hours that are non-zero (to avoid trivial negative
+
+    cases). None of the cases overlap in time (i.e. we perform a
+
+    segmentation rather than use a sliding window). Of the 86,066
+
+    hourly readings, we produce 368 negative cases and 93 positive.'
+  donated_by: A. Bagnall
+  data_source_link: ''
+  second_link: ''
+original_problem:
+  description: >
+    There is no external "original problem" here in the sense of a domain study
+    that posed this task. The underlying data are hourly averaged seismic
+    readings from the Northern California Earthquake Data Center (NCEDC),
+    Dec 1967 to 2003, a monitoring archive rather than an experiment. Anthony
+    Bagnall (the donor) constructed a classification problem from that single
+    long record: given the last 512 hourly readings, is a major event about to
+    occur? Earthquake *precursor* prediction is a real and famously hard
+    seismological goal; the curation, however, is the curators' own, and the
+    archive page is the only account of it I could find.
+  prediction_target: >
+    whether a major seismic event (reading above 5 on the Richter scale, not
+    itself preceded by another major event within 512 hours) follows the window
+  input_as_originally_posed: >
+    a continuous hourly-averaged seismic reading stream from NCEDC monitoring
+    stations in northern California
+  task_family: other
+  # No enum value fits: this is seismic hazard/precursor monitoring, not device
+  # monitoring, remote sensing, or demand analysis. Flagged for the vocabulary
+  # owner; see final report.
+  stakeholder_and_use: >
+    seismic-hazard monitoring agencies and earthquake early-warning services, in
+    principle; in practice the dataset was assembled as a TSC benchmark
+  source: >
+    timeseriesclassification.com description page for Earthquakes, which is the
+    curators' own account and is quoted verbatim in `archive_page.description`
+    above: "We transform this single time series into a classification problem
+    by first defining a major event as any reading of over 5 on the Rictor
+    scale... Hence we consider a positive case to be one where a major event is
+    not preceded by another major event for at least 512 hours. To construct a
+    negative case, we consider instances where there is a reading below 4... that
+    is preceded by at least 20 readings in the previous 512 hours that are
+    non-zero (to avoid trivial negative cases). None of the cases overlap in
+    time (i.e. we perform a segmentation rather than use a sliding window). Of
+    the 86,066 hourly readings, we produce 368 negative cases and 93 positive."
+    I could not locate a separate peer-reviewed paper describing this curation,
+    nor documentation of exactly which NCEDC quantity was "averaged" per hour.
+  provenance_confidence: medium
+
+translation:
+  transformation: [windowing]
+  what_the_x_axis_is: time
+  sampling: >
+    One value per hour; each instance is a non-overlapping 512-hour (~21 day)
+    window taken from the 86,066-hour NCEDC record.
+  information_lost_or_added: >
+    Spatial information is gone — readings from "the surrounding area" are
+    collapsed into one number per hour, so which fault or station produced a
+    reading is not recoverable. Sub-hourly waveform structure, the actual
+    physical signal a seismologist would use, is averaged away entirely. The
+    class construction also discards every window that is neither a clean
+    positive nor a clean negative under the curators' rules (461 cases out of
+    86,066 hours).
+  label_semantics_changed: >
+    yes: the labels are defined by curator-chosen thresholds and exclusion rules
+    (>5 for a major event, <4 for a negative, no major event in the preceding
+    512 h, at least 20 non-zero readings) rather than by a domain-standard
+    definition of a predictable event.
+
+benchmark_task:
+  description: >
+    Classify a 512-point hourly seismic window as preceding a major event or
+    not.
+  is_same_as_original: different-task
+  # The data are real, but no prior study posed this classification problem:
+  # the curators cut a monitoring archive into windows and invented the label
+  # rule, so the benchmark task is not the task the data were collected for.
+
+verdict: native-tsc
+verdict_rationale: >
+  The input is a genuinely temporal hourly seismic record windowed in time, so
+  despite the entirely curator-defined labels the series axis is real time.
+known_issues:
+  - >
+    Class definition is documented but arbitrary and self-acknowledged as such:
+    the >5 / <4 thresholds, the 512-hour exclusion of preceding major events and
+    the "at least 20 non-zero readings" filter are all curator choices designed
+    to avoid trivial cases. A human verifier should decide whether the resulting
+    positives are physically a "precursor" class at all.
+  - >
+    Windows are slices of one continuous 1967-2003 record. The curators state
+    the cases do not overlap in time, which helps, but windows from the same
+    seismic sequence or the same station-configuration era can still land on
+    both sides of the train/test split.
+  - >
+    Dau et al. 2019 (arXiv:1810.07758), Table I, list Earthquakes among fourteen
+    data sets whose train/test split was REVERSED for the new (2018) archive;
+    accuracy numbers from before and after that change are not comparable.
+  - >
+    Strong class imbalance (368 negative / 93 positive overall; test default
+    rate 0.25 in the cached UCR summary) and reported error rates hovering near
+    the default rate, i.e. little evidence any method solves it.
+  - >
+    It is not documented which NCEDC quantity is "an averaged reading for one
+    hour" (magnitudes? amplitudes? counts?), which makes the physical meaning of
+    the values unverifiable from the archive alone.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.7266
+    acc_permuted: 0.7482
+    drop: -0.0216
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 7.9
+    run: '2026-09-03'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.7266
+    acc_raw_values: 0.7338
+    acc_summary_stats: 0.7122
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: -0.0072
+    gap_summary: 0.0144
+    seed: 0
+    runtime_s: 4.5
+    run: '2026-09-03'
+
+references:
+- https://www.timeseriesclassification.com/description.php?Dataset=Earthquakes
+- https://ncedc.org/ (Northern California Earthquake Data Center)
+- Dau et al., "The UCR Time Series Archive", arXiv:1810.07758

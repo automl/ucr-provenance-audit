@@ -1,0 +1,147 @@
+name: GunPoint
+archive:
+- UCR
+archive_type_tag: HAR
+n_train: 50
+n_test: 150
+series_length: 150
+n_channels: 1
+n_classes: 2
+
+archive_page:
+  description: 'This dataset involves one female actor and one male actor making a
+
+    motion with their hand. The two classes are: Gun-Draw and Point:
+
+    For Gun-Draw the actors have their hands by their sides. They draw
+
+    a replicate gun from a hip-mounted holster, point it at a target
+
+    for approximately one second, then return the gun to the holster,
+
+    and their hands to their sides. For Point the actors have their gun
+
+    by their sides. They point with their index fingers to a target for
+
+    approximately one second, and then return their hands to their
+
+    sides. For both classes, we tracked the centroid of the actor''s
+
+    right hands in both X- and Y-axes, which appear to be highly
+
+    correlated. The data in the archive is just the X-axis. Class 1 is "gun" and class
+    2 is "no gun (pointing)"'
+  donated_by: A. Ratanamahatana, E. Keogh
+  data_source_link: http://alumni.cs.ucr.edu/~ratana/RatanamC.pdf
+  second_link: ''
+original_problem:
+  description: >
+    A staged gesture-recognition dataset recorded at UCR in 2003. Ratanamahatana
+    & Keogh (2004), "Everything you know about Dynamic Time Warping is Wrong",
+    Appendix A, Sec. 10.2: "This dataset comes from the video surveillance
+    domain. The dataset has two classes, each containing 100 instances. All
+    instances were created using one female actor and one male actor in a
+    single session." In Gun-Draw the actor draws a replica gun from a hip
+    holster, points it at a target and returns it; in Point the actor points
+    with the index finger instead. The centroid of the right hand is tracked
+    in X and Y; the paper's experiments use the X-axis only. Dau et al.
+    (arXiv:1810.07758v1, Sec. 6.3.1): "The task of the original GunPoint
+    dataset was differentiating between the Gun and the Point action". The
+    UCR 2018 briefing document names the actors as Ann Ratanamahatana and
+    Eamonn Keogh, the dataset's donors.
+  prediction_target: gesture performed (gun-draw vs point)
+  input_as_originally_posed: video of the actor (30 frames/s); right-hand centroid tracked in X and Y, the X-coordinate used
+  task_family: activity-recognition
+  stakeholder_and_use: >
+    The source places the data "in the video surveillance domain" (Sec. 10.2);
+    no operational stakeholder or deployment is identified in the consulted
+    sources. Inference: a staged research dataset used to demonstrate
+    time-series similarity methods.
+  source: >
+    Ratanamahatana, C. A. & Keogh, E., "Everything you know about Dynamic Time
+    Warping is Wrong", SIGKDD Workshop on Mining Temporal and Sequential Data,
+    2004, Appendix A Sec. 10.2; Dau et al., "The UCR Time Series Archive",
+    arXiv:1810.07758v1, Sec. 6.3.1 (2003 recording, later GunPoint siblings).
+  provenance_confidence: high
+
+translation:
+  transformation: [channel-selection, windowing, z-normalization]
+  # Channel selection (X only) and segmentation into instances were done by
+  # the source authors, not by a later archive step (Sec. 10.2).
+  what_the_x_axis_is: time
+  sampling: >
+    Video at 30 frames/s; each actor was "signaled every 5 seconds before each
+    repetition", and the clip "was easily segmented into 150 data points for
+    each instance" (Sec. 10.2), i.e. 5 s x 30 frames/s = 150 values, so no
+    resampling is needed to explain the shipped length (no source mentions any).
+  information_lost_or_added: >
+    The tracked Y-coordinate and all other video content are dropped; only the
+    X-coordinate of the hand centroid is released. Every shipped series is
+    z-normalized (measured: max |mean| 4.2e-9, sd 0.999999994-1.000000005;
+    stated for GunPoint in the 2018 briefing document), removing offset and
+    scale. The 5-second cues fix where each gesture starts.
+  label_semantics_changed: "no"
+
+benchmark_task:
+  description: Classify a length-150 z-normalized hand X-coordinate series as gun-draw (class 1) or point (class 2).
+  is_same_as_original: "yes"
+  # The source already posed the same two-class task on X-only trajectories;
+  # it evaluated by leave-one-out over all 200 instances, the archive ships a
+  # fixed 50/150 split whose author is undocumented.
+
+verdict: native-tsc
+verdict_rationale: >
+  Real hand motion recorded over time; the released series keeps physical time
+  as its index, and the gesture labels are documented by the source.
+known_issues:
+  - >
+    All 200 instances come from one recording session with two actors (Sec.
+    10.2: "one female actor and one male actor in a single session"), so the
+    train and test sets necessarily share that session (inference from the
+    quote). Which actor performed which series is not shipped and no source
+    gives per-actor or per-split counts, so whether both actors appear on both
+    sides is unknown.
+  - >
+    No exact duplicates (measured 2026-11-01): 200 unique series, 0 of 150 test
+    series identical to a training series. Class counts train 24/26, test
+    76/74, 100 per class in total as the source states.
+  - >
+    The same two actors were recorded again in 2018 and merged with this data
+    into GunPointAgeSpan, GunPointMaleVersusFemale and GunPointOldVersusYoung
+    (Dau et al., Sec. 6.3.1).
+  - 'archive_type_tag: the site''s aggregate table now files this under HAR; older description pages used Motion.'
+  - >
+    Inference: a staged dataset made to demonstrate similarity methods, not an
+    externally posed applied problem; the sources state the surveillance
+    framing but name no user.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.9933
+    acc_permuted: 0.98
+    drop: 0.0133
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 5.4
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.9933
+    acc_raw_values: 0.8267
+    acc_summary_stats: 0.6933
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.1667
+    gap_summary: 0.3
+    seed: 0
+    runtime_s: 3.1
+    run: '2026-09-04'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=GunPoint
+  - https://timeseriesclassification.com/aeon-toolkit/GunPoint.zip (shipped description and train/test files)
+  - Ratanamahatana & Keogh (2004), "Everything you know about Dynamic Time Warping is Wrong", Appendix A Sec. 10.2 - https://www.cs.ucr.edu/~eamonn/DTW_myths.pdf
+  - Dau et al., "The UCR Time Series Archive", arXiv:1810.07758v1, Sec. 6.3.1 - https://arxiv.org/pdf/1810.07758v1
+  - UCR Time Series Archive 2018 briefing document (GunPoint and GunPointAgeSpan panels) - https://www.cs.ucr.edu/~eamonn/time_series_data_2018/BriefingDocument2018.pdf

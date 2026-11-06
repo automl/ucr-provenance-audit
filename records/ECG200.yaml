@@ -1,0 +1,166 @@
+name: ECG200
+archive:
+- UCR
+archive_type_tag: ECG
+n_train: 100
+n_test: 100
+series_length: 96
+n_channels: 1
+n_classes: 2
+
+original_problem:
+  description: >
+    Olszewski evaluated feature-extraction methods (structure detectors) on
+    single heartbeats labelled normal or abnormal. Thesis Sec. 4.3, p.69: "The
+    ECG database for the experiment was drawn from the Supraventricular
+    Arrhythmia Database (SVDB) ... The SVDB contains 78 Holter ECG recordings
+    where each electrocardiogram was recorded from a single patient for a
+    duration of approximately thirty minutes. One ECG was selected at random
+    and the portions of the recording representative of heartbeats with the
+    most prevalent abnormality - supraventricular premature beat - were
+    extracted along with a random sample of the portions of the recording
+    representative of normal heartbeats. Two leads, called lead 0 and lead 1,
+    were used to record this ECG, and each data set contains the measurement
+    values from one lead for one heartbeat." Labels, p.66: "The data sets
+    contained in each database were analyzed by appropriate domain experts, and
+    a label of normal or abnormal was assigned to each data set"; the ECG
+    database has 200 data sets, 133 normal and 67 abnormal (Table 4.3). The
+    archive attributes ECG200 to this thesis but describes the abnormal class
+    as myocardial infarction (see known_issues).
+  prediction_target: normal heartbeat vs supraventricular premature beat (the archive's description says myocardial infarction)
+  input_as_originally_posed: >
+    Two-lead Holter ECG recording of one patient; the thesis experiment uses
+    individual heartbeats extracted from each lead separately.
+  task_family: clinical-diagnosis
+  stakeholder_and_use: >
+    physicians interpreting cardiac abnormalities - the thesis's general framing
+    is "assisting the physician in diagnosing the condition of a patient's heart"
+    (Ch. 1, p.2); this experiment itself evaluates feature extraction.
+    Deployment unit assumed by this audit (author ruling, 2026-11-02):
+    patient-specific monitoring, i.e. a new recording session of a known
+    patient. Neither the thesis nor the archive states a deployment unit.
+  source: >
+    Olszewski, R. T., "Generalized feature extraction for structural pattern
+    recognition in time-series data", PhD thesis, Carnegie Mellon University,
+    2001 (CMU-CS-01-108), Sec. 4.3 pp.65-70 (ECG database, Tables 4.3-4.4).
+    Myocardial infarction appears only in the illustrative Figure 2.5,
+    Sec. 2.5 pp.17-18, not in the experimental data.
+  provenance_confidence: high
+  # High for the original problem (author ruling 2026-11-02): the thesis
+  # documents its ECG collection (SVDB, one randomly selected single-patient
+  # Holter recording, two leads, expert labels, 133/67). Not covered by this
+  # rating: the record-level mapping from the thesis collection to the shipped
+  # files, the retained lead and the length conversion are undocumented, and
+  # the archive's class description contradicts the thesis.
+
+translation:
+  transformation: [windowing, channel-selection, z-normalization]
+  what_the_x_axis_is: time
+  sampling: >
+    One heartbeat per series, 96 values. The thesis beats have variable length
+    (Table 4.4: normal 61-116, abnormal 39-152 samples). How and by whom they were
+    converted to 96 values is undocumented. Sampling rate not established.
+  information_lost_or_added: >
+    Individual beats extracted from the recording by the thesis author, so
+    surrounding context (rhythm, neighbouring beats) is absent [inference].
+    One of two simultaneously recorded leads is shipped; which one is
+    undocumented. The variable-length beats were converted to 96 values by an
+    undocumented method: no shipped series has a constant run in its first or
+    last 8 values, so constant padding did not produce the length (measured).
+    Every shipped series is z-normalized (measured: max |mean| 4.4e-9, sd
+    0.99999999-1.00000001), removing absolute amplitude and offset.
+  label_semantics_changed: "no"
+  # Inference: the benchmark keeps the thesis's normal / abnormal (SVPB)
+  # labels and the archive's "Myocardial Infarction" is a description error.
+  # Supported by the archive's attribution and the matching counts (200; 133/67);
+  # record-level correspondence is unverified.
+
+benchmark_task:
+  description: >
+    Classify a single-heartbeat series (length 96) as normal or abnormal
+    (supraventricular premature beat per the thesis; the archive describes the
+    abnormal class as myocardial infarction).
+  is_same_as_original: "yes"
+  # The thesis experiment already classifies single beats (p.66: "measurements
+  # recorded by one electrode during one heartbeat"); continuity of the task
+  # into the archive is an inference (see translation comment).
+
+verdict: native-tsc
+verdict_rationale: >
+  A temporal physiological signal (one ECG heartbeat on a time axis); the
+  benchmark keeps the thesis's beat-classification task, whose class meaning
+  is documented by the thesis even though the archive misdescribes it.
+known_issues:
+  - >
+    The archive's class description is contradicted by the cited source. The
+    archive says "The two classes are a normal heartbeat and a Myocardial
+    Infarction"; the thesis's ECG data are normal versus supraventricular
+    premature beats (Sec. 4.3, p.69). Myocardial infarction appears in the
+    thesis only in the illustrative Figure 2.5. Inference: the archive's wording
+    is an error; the possible Figure 2.5 origin is speculation.
+  - >
+    All beats come from one patient. The thesis selected "One ECG ... at random"
+    from SVDB Holter recordings, each "recorded from a single patient"
+    (p.69), so every train and test beat comes from the same patient and
+    recording (inference: this transfers to the shipped files via the archive's
+    attribution and the matching 200 / 133:67 counts). Train and test therefore
+    share one recording session, so the benchmark tests other beats of the same
+    session, not a new session of the patient and not new patients.
+  - >
+    The archive's 100/100 split is not the thesis's. The thesis trains each
+    feature extractor on randomly chosen training sets of r = 2, 4, 8 and 16
+    data sets (Ch. 4, experimental design); it states no fixed train/test
+    split. Who made the archive split, by what rule, and whether train and test
+    beats differ in time within the recording is undocumented.
+  - >
+    Class counts match the thesis: shipped train 69/31, test 64/36, total
+    133/67 for labels +1/-1 (measured); thesis 133 normal / 67 abnormal
+    (Table 4.3). Inference: +1 = normal, -1 = abnormal; the mapping is not
+    documented.
+  - >
+    The source has two leads (lead 0, lead 1; per p.70 footnote the laboratory
+    "regularly used" modified lead II and V1, a personal communication, not
+    confirmed for these records). The archive is univariate and does not say
+    which lead it ships. The thesis says the two lead collections "constitute
+    two individual subsets from the ECG database, and will be used separately"
+    (p.69), and counts the wafer database (six parameters per wafer) the same
+    way, so its 200 data sets are most likely 200 heartbeats per lead and the
+    archive one lead's complete subset (inference). A mixture of leads, which
+    could put both leads of one beat on opposite sides, is not ruled out.
+  - >
+    Length and amplitude were changed after the thesis: variable-length beats
+    (39-152 samples) became 96 values by an undocumented method, and every
+    series is z-normalized (measured).
+  - >
+    No exact duplicates (measured): 200 unique series, 0 of 100 test series
+    identical to a training series, no duplicate groups with mixed labels.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.91
+    acc_permuted: 0.92
+    drop: -0.01
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 5.8
+    run: '2026-09-03'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.91
+    acc_raw_values: 0.79
+    acc_summary_stats: 0.74
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.12
+    gap_summary: 0.17
+    seed: 0
+    runtime_s: 3.5
+    run: '2026-09-03'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=ECG200
+  - https://timeseriesclassification.com/aeon-toolkit/ECG200.zip (shipped description file and train/test files)
+  - Olszewski (2001), PhD thesis, CMU-CS-01-108, Sec. 4.3 pp.65-70 and Sec. 2.5 pp.17-18 - https://www.cs.cmu.edu/~bobski/pubs/tr01108-onesided.pdf
+  - Supraventricular Arrhythmia Database (SVDB), MIT-BIH CD-ROM / PhysioNet - identified by the thesis as the source, not consulted directly

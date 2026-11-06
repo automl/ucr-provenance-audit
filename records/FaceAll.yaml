@@ -1,0 +1,100 @@
+name: FaceAll
+archive:
+- UCR
+archive_type_tag: IMAGE
+n_train: 560
+n_test: 1690
+series_length: 131
+n_channels: 1
+n_classes: 14
+archive_page:
+  description: 'FaceAll was generated at UCR by Xiaopeng Xi. The faces belong to 14 grad students.
+    Each facial outline is
+
+    mapped onto a one dimensional series.'
+  donated_by: X. Xi, E. Keogh
+  data_source_link: ''
+  second_link: ''
+original_problem:
+  description: >
+    A person-identification problem built in-house at UCR. Archive page:
+    "FaceAll was generated at UCR by Xiaopeng Xi. The faces belong to 14 grad
+    students. Each facial outline is mapped onto a one dimensional series." The
+    UCR briefing document (Dau et al., arXiv:1810.07758, Sec. on what is in the
+    archive) explains the general provenance of such datasets: "with an
+    inexpensive scanner or a camera, it was possible to create many
+    image-derived datasets such as GunPoint, OSULeaf, SwedishLeaf, Yoga, Fish or
+    FacesUCR." No paper posing face-profile identification as an applied problem
+    was found; the dataset appears to have been created to have a
+    multi-class shape benchmark.
+  prediction_target: which of 14 individuals the head profile belongs to
+  input_as_originally_posed: photograph of a graduate student's head, from which the profile outline was extracted
+  task_family: image-classification
+  stakeholder_and_use: >
+    none applied; biometric identification from a head silhouette is not a
+    deployed use case, and the data were made as a research benchmark
+  source: >
+    Archive page only (donated by X. Xi and E. Keogh; no data_source_link or
+    second_link given). Xi et al., "Fast time series classification using
+    numerosity reduction", ICML 2006 was read and does not describe this dataset
+    (it uses "Face (four)", n=112). No primary description was located.
+  provenance_confidence: low
+
+translation:
+  transformation: [contour-unrolling, resampling, z-normalization]
+  what_the_x_axis_is: arc-length
+  sampling: >
+    131 points along the extracted head profile. The reference point, direction
+    and resampling rule are undocumented; secondary descriptions state that the
+    first part of the series corresponds to the facial contour and the remainder
+    to the hair contour, which could not be confirmed against a primary source.
+  information_lost_or_added: >
+    All appearance information (skin, hair colour, texture, internal facial
+    features) is discarded; only the silhouette remains. Hair styling therefore
+    contributes as much signal as facial anatomy, and head size is removed by
+    z-normalization.
+  label_semantics_changed: "no"
+
+benchmark_task:
+  description: Classify a length-131 head-profile series as one of 14 individuals.
+  is_same_as_original: "yes"
+  # As far as can be determined, the archive task is the task the data were made for.
+
+verdict: translated-modality
+verdict_rationale: >
+  A photographed head reduced to its profile outline traversed by arc-length;
+  the source modality is an image and the axis is spatial.
+known_issues:
+  - 'Same underlying data as FacesUCR: 560+1690 = 200+2050 = 2250 instances. FacesUCR is described by the archive as a rotationally aligned version with a different split, so the two datasets are not independent benchmarks.'
+  - Only 14 subjects, with many images each; images of the same person in train and test are near-duplicates, so the split does not test generalization to new photographs in any strong sense.
+  - Hairstyle, not anatomy, may carry most of the class signal.
+  - No primary source; provenance rests on the archive page alone.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.8065
+    acc_permuted: 0.7219
+    drop: 0.0846
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 5.5
+    run: '2026-09-03'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.8065
+    acc_raw_values: 0.7657
+    acc_summary_stats: 0.4402
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.0408
+    gap_summary: 0.3663
+    seed: 0
+    runtime_s: 5.8
+    run: '2026-09-03'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=FaceAll
+  - Dau et al., "The UCR Time Series Archive", arXiv:1810.07758
+  - Xi, Keogh, Shelton, Wei & Ratanamahatana, "Fast time series classification using numerosity reduction", ICML 2006 - https://www.cs.ucr.edu/~cshelton/papers/docs/icml06.pdf (read; does not describe FaceAll)

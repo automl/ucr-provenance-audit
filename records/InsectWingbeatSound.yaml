@@ -1,0 +1,156 @@
+name: InsectWingbeatSound
+archive:
+- UCR
+archive_type_tag: SENSOR
+n_train: 220
+n_test: 1980
+series_length: 256
+n_channels: 1
+n_classes: 11
+archive_page:
+  description: ''  # description.php renders empty for this dataset (checked 2026-08-18);
+                   # stats taken from Dau et al. 2019 (UCR archive paper), Table 2
+  donated_by: ''
+  data_source_link: ''
+  second_link: ''
+original_problem:
+  description: >
+    UCR's computational entomology group built cheap pseudo-acoustic optical
+    sensors — a laser line pointed at a phototransistor array — that record the
+    light fluctuations caused by an insect's wings occluding the beam as it
+    flies through. The goal is automated, non-invasive surveillance of flying
+    insects: detect, count and identify insects (down to species and, for
+    mosquitoes, sex) so that vector-borne disease control and precision
+    agriculture can act on real population data instead of manual trap counts.
+    The paper's central argument is that wingbeat *frequency alone* is not
+    enough to separate species, so richer frequency-domain features are needed.
+  prediction_target: >
+    insect species and sex (male/female Ae. aegypti, Cx. tarsalis,
+    Cx. quinquefasciatus, Cx. stigmatosoma, plus Musca domestica, Drosophila
+    simulans and other insects) — 11 classes in the archive version
+  input_as_originally_posed: >
+    a pseudo-acoustic optical recording of the flight sound of one insect
+    crossing a laser beam
+  task_family: audio-classification
+  stakeholder_and_use: >
+    public-health vector control (mosquito surveillance) and agricultural pest
+    monitoring
+  source: >
+    Chen, Why, Batista, Mafra-Neto & Keogh, "Flying Insect Classification with
+    Inexpensive Sensors", J. Insect Behavior 27(5):657-677, 2014
+    (arXiv:1403.2654, read in full). On the sensor: "design of the sensor
+    consists of a phototransistor array which is connected to an electronic
+    board, and a laser line pointing at the phototransistor array. When an
+    insect flies across the laser beam, its wings partially occlude the light,
+    causing small light fluctuations." On why the frequency domain: "The vast
+    majority of attempts to classify insects by their flight sounds have
+    explicitly or implicitly used just the wingbeat frequency... The Bayes error
+    rate to classify the three species in Figure 1.I using just the wingbeat
+    frequency is 19.13%; however, as we shall see below... by using the
+    additional features from the signal, we can obtain [better results]." The
+    detector stage is "a nearest neighbor classifier based on the frequency
+    spectrum". That the ARCHIVE series are the spectrum rather than the raw
+    sound is stated by the secondary dataset documentation
+    (fda.tsc R package, InsectWingbeatSoundTSC: "The data in the archive is the
+    power spectrum of the sound"; 2200 curves of 256 points, first 220 train)
+    and by the timeseriesclassification.com description of the sibling
+    InsectWingbeat dataset; the UCR description.php page for
+    InsectWingbeatSound itself renders empty (checked 2026-08-18).
+  provenance_confidence: medium
+  # The primary sensor/task paper was read in full, but the exact archive
+  # preprocessing (FFT length, windowing, frequency range covered by the 256
+  # points) is documented only in secondary sources, so this is not `high`.
+
+translation:
+  transformation: [spectrum-as-series, z-normalization]
+  what_the_x_axis_is: frequency
+  # The schema's `wavelength` value covers the wavelength/frequency axis (see
+  # the `spectroscopy` entry in docs/schema.md). Here it is ACOUSTIC frequency
+  # in Hz, not an optical wavelength. See the report's vocabulary note.
+  sampling: >
+    256 power-spectrum bins per instance, computed from a short recording of one
+    insect's passage. The frequency range spanned by the 256 bins and the FFT
+    parameters are not documented in the archive.
+  information_lost_or_added: >
+    The Fourier magnitude spectrum discards all phase and all time structure
+    within the recording — how the wingbeat evolved during the passage, and how
+    long the insect took to cross the beam, are gone. What remains is the
+    harmonic profile: the fundamental wingbeat frequency and its overtones,
+    which is exactly the representation the source paper argues for. Neighbouring
+    points are adjacent frequency bins, correlated for spectral rather than
+    temporal reasons.
+  label_semantics_changed: "no"
+
+benchmark_task:
+  description: >
+    Classify a univariate length-256 power spectrum of an insect flight sound
+    into one of 11 species/sex classes.
+  is_same_as_original: narrowed
+  # Same labels and the same feature representation the source paper used; the
+  # benchmark drops the detection stage and the meta-features (time of day,
+  # etc.) the paper combines with the spectrum.
+
+verdict: ordered-not-temporal
+verdict_rationale: >
+  The archive series is the power spectrum of the flight sound, so the ordered
+  axis is acoustic frequency, not time; the original recording was temporal but
+  the released representation is not.
+known_issues:
+  - >
+    The archive's SENSOR tag and the name "...Sound" invite the reading that
+    these are audio waveforms. They are not — they are spectra, and any claim
+    about "temporal" modelling on this dataset is a mis-description. A human
+    verifier should confirm this against the raw archive files (a spectrum is
+    non-negative and smooth with harmonic peaks; a waveform oscillates about
+    zero).
+  - >
+    The dataset's own description page on timeseriesclassification.com is empty,
+    so the archive supplies no provenance at all; everything here comes from the
+    source paper plus secondary dataset documentation.
+  - >
+    Very small training set (220) for 11 classes — 20 instances per class —
+    against 1980 test instances, with a 0.909 default rate.
+  - >
+    Insects were recorded in experimental chambers holding 20-40 individuals of
+    one species each, so instances of a class come from a small number of caged
+    cohorts; individual-insect and cohort identity are potential shortcuts and
+    are not recoverable from the released data.
+  - >
+    Because phase and duration are discarded, the permutation test for this
+    dataset should be interpreted as shuffling frequency bins, not time steps.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.6722
+    acc_permuted: 0.6414
+    drop: 0.0308
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 5.6
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.6722
+    acc_raw_values: 0.6172
+    acc_summary_stats: 0.1576
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.0551
+    gap_summary: 0.5146
+    seed: 0
+    runtime_s: 4.0
+    run: '2026-09-04'
+
+references:
+- https://www.timeseriesclassification.com/description.php?Dataset=InsectWingbeatSound
+- >
+  Chen, Why, Batista, Mafra-Neto & Keogh, "Flying Insect Classification with
+  Inexpensive Sensors", Journal of Insect Behavior 27(5):657-677, 2014;
+  arXiv:1403.2654
+- >
+  fda.tsc R package documentation, InsectWingbeatSoundTSC
+  (https://rdrr.io/github/moviedo5/fda.tsc/man/InsectWingbeatSoundTSC.html)
+- https://www.timeseriesclassification.com/description.php?Dataset=InsectWingbeat
+- Dau et al., "The UCR Time Series Archive", arXiv:1810.07758

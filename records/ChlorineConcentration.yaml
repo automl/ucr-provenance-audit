@@ -1,0 +1,174 @@
+name: ChlorineConcentration
+archive:
+- UCR
+archive_type_tag: SIMULATED
+n_train: 467
+n_test: 3840
+series_length: 166
+n_channels: 1
+n_classes: 3
+archive_page:
+  description: 'This dataset was defined in a PhD thesis by Lei Li (Carnegie Mellon University).
+
+    It was produced by EPANET that models
+
+    the hydraulic and water quality behavior of water distribution
+
+    piping systems. EPANET can track, in a given water network, the
+
+    water level and pressure in each tank, the water flow in the pipes
+
+    and the concentration of a chemical species (Chlorine in this case)
+
+    throughout the network within a simulated duration. The data set
+
+    consists of 166 nodes (pipe junctions) and measurement of the
+
+    Chlorine concentration level at all these nodes during 15 days (one
+
+    measurement for every 5 minutes, a total of 4310 time ticks).'
+  donated_by: L. Li, C. Faloutsos
+  data_source_link: http://www.cs.cmu.edu/~leili/pubs/leili-thesis.pdf
+  second_link: http://www.cs.cmu.edu/~leili/pubs/li-kdd09.pdf
+original_problem:
+  description: >
+    Not a classification problem at all in its source. Li, McCann, Pollard
+    and Faloutsos needed a large, realistic co-evolving sequence collection
+    to evaluate DynaMMo, a method for summarizing and imputing missing
+    values in multi-dimensional sequences, and produced one with EPANET, the
+    EPA simulator of hydraulic and water-quality behaviour in drinking-water
+    distribution networks - chlorine concentration at every node of a
+    network over 15 simulated days. The physical system modelled (residual
+    chlorine decay across a piped network under a daily demand cycle) is a
+    real water-utility monitoring concern, but the values are simulator
+    output, and no domain classification target was ever defined for them.
+  prediction_target: >
+    undocumented. The archive ships three classes (about 1000/1000/2307
+    examples over the 4307 series) and no consulted source - archive page,
+    the KDD'09 paper, or the UCR archive paper - says what they mean.
+  input_as_originally_posed: EPANET simulation output - chlorine concentration at 166 network nodes, sampled every 5 minutes for 15 days
+  task_family: other
+  # `other`: a physics/water-quality simulation of a real utility system,
+  # repurposed as a classification benchmark. It is not `synthetic-demo`
+  # (the simulator models a real system with real stakeholders, and the data
+  # was made for imputation research, not to demonstrate a classifier), and
+  # not `device-monitoring` or `demand-and-load-analysis` (chlorine residual
+  # is a water-quality state, not a device trace or a demand curve).
+  stakeholder_and_use: >
+    water utilities / EPANET modellers care about residual chlorine across a
+    network; but nobody outside the archive poses the shipped 3-class
+    problem, so the benchmark task has no identified user.
+  source: >
+    Li, McCann, Pollard, Faloutsos, "DynaMMo - Mining and Summarization of
+    Coevolving Sequences with Missing Values", KDD 2009, Sec. 4.1.2
+    Datasets (read) - "Chlorine Dataset (Chlorine) - The Chlorine dataset
+    (see sample in Figure 6(a)) was produced by EPANET 2 that models the
+    hydraulic and water quality behavior of water distribution piping
+    systems. ... The data set consists of 166 nodes (pipe junctions) and
+    measurement of the Chlorine concentration level at all these nodes
+    during 15 days (one measurement for every 5 minutes, a total of 4310
+    time ticks). Since the water demand pattern during the 15 days follows
+    a clear global periodic pattern (daily cycle, dominating residential
+    demand pattern), EPANET would correctly reflect the pattern in the
+    Chlorine concentration with a few exceptions and slight time shifts."
+    The archive page attributes the data to Lei Li's CMU PhD thesis; both
+    links it gives (cs.cmu.edu/~leili/pubs/leili-thesis.pdf and
+    .../li-kdd09.pdf) are dead (HTTP 404), and the thesis itself was not
+    reached - the KDD'09 paper above is the same data described by the same
+    authors.
+  provenance_confidence: medium
+
+translation:
+  transformation: [simulation, z-normalization]
+  # No vocabulary value covers the decisive step here: the archive copy is the
+  # TRANSPOSE of the source matrix (each example is one time tick's profile
+  # across the 166 nodes). Recorded under information_lost_or_added instead.
+  what_the_x_axis_is: position
+  sampling: >
+    166 values per series - one per network node, not per time step. Each
+    series is z-normalized. The original simulation is sampled every 5
+    minutes over 15 days (4310 ticks) at 166 nodes.
+  information_lost_or_added: >
+    The archive's series axis is the network's node index, i.e. a spatial /
+    topological ordering of pipe junctions, not the simulated time axis.
+    Two facts force this reading - the series length (166) is exactly the
+    number of nodes in the source data, and the number of shipped examples
+    (467 + 3840 = 4307) is essentially the number of time ticks (4310);
+    and the mean series over the whole archive copy is a sequence of short
+    monotone runs interrupted by sharp resets (runs of roughly 12 points),
+    which is what a downstream chlorine decay profile along successive
+    pipe branches looks like, not what 166 consecutive 5-minute samples of
+    a smooth daily demand cycle would look like. Independently, Diehl et
+    al. (FRUITS, arXiv:2311.14549, Sec. 4.1) reach the same conclusion -
+    "This description is contradictory to the dataset structure. The
+    temporal structure of a sample is given by measurements on different
+    nodes across the piping system and not by the 4310 time steps. We
+    believe that this labeling is responsible for the bad performance of
+    FRUITS." So the temporal dimension of the source data is discarded and
+    the ordering that remains is the (arbitrary, curator-inherited) node
+    numbering.
+  label_semantics_changed: "yes: the source data has no labels at all; the three archive classes were imposed by curation and their meaning is undocumented"
+
+benchmark_task:
+  description: >
+    Classify a univariate length-166 series (a cross-section of chlorine
+    concentration across the 166 network nodes) into three undocumented
+    classes.
+  is_same_as_original: different-task
+  # The source data was made for imputation/compression of co-evolving
+  # sequences; the archive poses a supervised 3-class problem over
+  # transposed, z-normalized cross-sections.
+
+verdict: unclear
+verdict_rationale: >
+  The ordering axis is node position in the water network rather than the simulated
+  time axis (the shipped matrix is the transpose of the source), which would give
+  ordered-not-temporal - but the three classes are undocumented in every source
+  consulted, so what the benchmark asks cannot be stated (rule 5, which takes
+  precedence over the modality rules).
+# Why not `synthetic` (the tag is SIMULATED and the values are EPANET output):
+# rule 1 keys on task_family == synthetic-demo, and this data was not generated
+# to demonstrate an algorithm's behaviour on a designed pattern - it is a
+# physics-based simulation of a real, stakeheld system, used as realistic test
+# data. A verifier who prefers to read "generated by a simulator" as
+# synthetic-demo would land on `synthetic` by rule 1; the layer-1/2 facts above
+# are what the disagreement should be argued over. `unclear` is also defensible
+# because the class semantics are undocumented.
+known_issues:
+  - The three class labels are undocumented in every source consulted (archive page, KDD'09 paper, UCR archive paper); nobody has published what the classes mean, so the task cannot be interpreted in domain terms.
+  - The archive's series axis is node index, not time - see translation.information_lost_or_added; the archive page's own text (which describes 15 days of 5-minute measurements) misleads readers into treating it as a temporal problem.
+  - All series are near-copies of one another (pairwise correlations typically 0.75-0.98 in the shipped data) and the three class-mean series are almost identical, which is why accuracy on this dataset barely moves above the majority-class rate (~53%) for many methods.
+  - Train/test are cross-sections of one 15-day simulation run of one network - examples from adjacent time ticks are near-duplicates and are split across train and test, so train/test independence is questionable.
+  - Every series is z-normalized, which destroys the absolute chlorine level - the physically meaningful quantity.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.7547
+    acc_permuted: 0.7443
+    drop: 0.0104
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 6.0
+    run: '2026-09-03'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.7547
+    acc_raw_values: 0.7906
+    acc_summary_stats: 0.5161
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: -0.0359
+    gap_summary: 0.2385
+    seed: 0
+    runtime_s: 4.4
+    run: '2026-09-03'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=ChlorineConcentration
+  - Li, McCann, Pollard, Faloutsos, DynaMMo, KDD 2009 (read, Sec. 4.1.2) - https://www.cs.cmu.edu/~leili/pubs/li2009dynammo.pdf
+  - Diehl, Krieg et al., FRUITS - Feature Extraction Using Iterated Sums for Time Series Classification, arXiv:2311.14549 (read, Sec. 4.1 ChlorineConcentration)
+  - Dau et al., The UCR Time Series Archive, arXiv:1810.07758 (consulted; contains no origin text for this dataset)
+  - Archive links http://www.cs.cmu.edu/~leili/pubs/leili-thesis.pdf and http://www.cs.cmu.edu/~leili/pubs/li-kdd09.pdf (both dead, HTTP 404)
+  - Own inspection of the shipped ChlorineConcentration_TRAIN.txt / _TEST.txt (shape 4307 x 166, class counts, correlation structure, grand-mean profile)

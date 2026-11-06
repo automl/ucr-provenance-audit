@@ -1,0 +1,104 @@
+name: Wine
+archive:
+- UCR
+archive_type_tag: SPECTRO
+n_train: 57
+n_test: 54
+series_length: 234
+n_channels: 1
+n_classes: 2
+archive_page:
+  description: "Food spectrographs of two types of wine. The classes are Cabernet Sauvignon'\
+    \ and 'Shiraz'.\r\nObtained using Fourier transform infrared (FTIR) spectroscopy with\r\
+    \nattenuated total reflectance (ATR) sampling."
+  donated_by: K. Kemsley, A. Bagnall
+  data_source_link: http://asu.ifr.ac.uk/example-datasets-for-download/
+  second_link: ''
+original_problem:
+  description: >
+    Varietal authentication of red wine: the archive says the two classes are
+    Cabernet Sauvignon and Shiraz and that the spectra were obtained by FTIR
+    with attenuated total reflectance sampling, which places it in the same
+    Institute of Food Research (Kemsley, Norwich) food-authentication family as
+    Coffee, Meat, OliveOil and Strawberry. I could not find the study behind
+    it. Who collected these wines, why, and what decision the classifier was
+    meant to support are therefore NOT established here - the description above
+    is the archive's own text, not a sourced account.
+  prediction_target: grape variety of a red wine (Cabernet Sauvignon vs Shiraz), per the archive page
+  input_as_originally_posed: mid-infrared FTIR-ATR spectrum of a wine sample, per the archive page
+  task_family: spectroscopy
+  stakeholder_and_use: >
+    not documented: no source states a user or use case for this dataset
+  source: >
+    NOT FOUND. The archive page gives no citation, only "donated by K. Kemsley,
+    A. Bagnall" and a data_source_link to the IFR "Example Datasets for
+    Download" page. I retrieved three Internet Archive snapshots of that page
+    (2013, 2014, 2016): it lists strawberry purees, minced meats, olive oils,
+    dry-cured ham SDS-PAGE lanes, coffee, DGGE lanes and facial EMG - but no
+    wine dataset. A Europe PMC author search for Kemsley EK (58 records)
+    returns no paper on wine. Bagnall et al. (SDM 2012) Sec. 3.1, which
+    introduced the other IFR spectrograms to the TSC literature, covers only
+    beef, coffee and olive oil. So the only evidence for the account above is
+    the archive page itself.
+  provenance_confidence: low
+
+translation:
+  transformation: [spectrum-as-series]
+  what_the_x_axis_is: wavelength
+  sampling: >
+    234 absorbance values on a mid-IR wavenumber grid (the archive states FTIR
+    with ATR sampling but gives no range or resolution)
+  information_lost_or_added: >
+    Unknown - with no source study, it cannot be said what was measured, how
+    many physical samples there were, or what preprocessing was applied. What
+    can be said is that the ordering is a spectral axis, not a temporal one.
+  label_semantics_changed: "no"
+
+benchmark_task:
+  description: Classify a univariate length-234 mid-IR spectrum as Cabernet Sauvignon or Shiraz.
+  is_same_as_original: "yes"
+  # Chosen as the least-assuming option: the labels are intrinsic sample
+  # metadata (grape variety) and there is no evidence of curator relabelling
+  # or of a scope restriction. But with no source study this cannot be
+  # verified - see known_issues.
+
+verdict: ordered-not-temporal
+verdict_rationale: >
+  The archive's own account of the modality (FTIR-ATR spectra) makes the
+  ordered axis a wavenumber grid rather than time; the verdict does not
+  depend on the unresolved provenance question.
+known_issues:
+  - 'No source study found (see original_problem.source for what was searched). Everything in layer 1 rests on the two-sentence archive description; treat the framing as unverified.'
+  - 'Consequently is_same_as_original: "yes" is an assumption, not a finding - there is no original write-up to compare the benchmark task against.'
+  - 'Small (57 train / 54 test) and near-balanced; a single test error is worth 1.9 accuracy points.'
+  - 'Number of physical wines behind the 111 spectra is unknown, so replicate acquisitions straddling the train/test split cannot be ruled out. A nearest-neighbour check on the shipped data found no clear replicate pairing (median nearest/second-nearest distance ratio 0.96), and the nearest training series carries the same label for only 61% of test cases.'
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.8519
+    acc_permuted: 0.7963
+    drop: 0.0556
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 5.3
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.8519
+    acc_raw_values: 0.6111
+    acc_summary_stats: 0.3889
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.2407
+    gap_summary: 0.463
+    seed: 0
+    runtime_s: 3.2
+    run: '2026-09-04'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=Wine
+  - 'IFR Analytical Sciences, "Example Datasets for Download" (http://asu.ifr.ac.uk/example-datasets-for-download/, snapshots of 2013/2014/2016 via the Internet Archive) - no wine dataset listed'
+  - 'Europe PMC author search AUTH:"Kemsley EK" (58 records) - no wine paper'
+  - 'Bagnall, Davis, Hills, Lines, "Transformation Based Ensembles for Time Series Classification", SDM 2012, Sec. 3.1 (https://archive.uea.ac.uk/~ajb/Papers/BagnallSDM2012.pdf)'

@@ -1,0 +1,99 @@
+name: Symbols
+archive:
+- UCR
+archive_type_tag: IMAGE
+n_train: 25
+n_test: 995
+series_length: 398
+n_channels: 1
+n_classes: 6
+archive_page:
+  description: 'Thirteen people participated in this experiment. They were asked to
+
+    copy the randomly appearing symbol as best they could. There were 3
+
+    possible symbols, each person contributed about 30 attempts. The
+
+    data is the X-Axis motion in drawing the shape.'
+  donated_by: J. Brady, E. Keogh
+  data_source_link: ''
+  second_link: ''
+original_problem:
+  description: >
+    A small drawing experiment, described only by the archive page: "Thirteen
+    people participated in this experiment. They were asked to copy the randomly
+    appearing symbol as best they could. There were 3 possible symbols, each
+    person contributed about 30 attempts. The data is the X-Axis motion in
+    drawing the shape." Despite the archive's IMAGE type tag, the recorded
+    quantity is hand/pen motion over the course of a drawing, not an outline
+    extracted from a picture. No publication describing the experiment, its
+    purpose or its apparatus was found.
+  prediction_target: which symbol (and/or which drawing condition) the attempt corresponds to
+  input_as_originally_posed: the horizontal component of hand motion recorded while a person copies a symbol
+  task_family: handwriting-recognition
+  stakeholder_and_use: >
+    none identified; on the face of it this is a copying/drawing experiment
+    created to produce a TSC benchmark
+  source: >
+    Archive page only (donated by J. Brady and E. Keogh; no data_source_link or
+    second_link, and no publication located). Provenance is therefore
+    unsupported beyond the archive's own text.
+  provenance_confidence: low
+
+translation:
+  transformation: [channel-selection, z-normalization]
+  what_the_x_axis_is: time
+  sampling: >
+    398 samples per attempt of the x-coordinate of the drawing motion. The
+    sampling rate, the device, and whether samples are uniform in time (rather
+    than resampled along the trajectory, as in PenDigits) are all undocumented.
+  information_lost_or_added: >
+    Only the x-component of a 2D drawing motion is kept; the y-component,
+    pressure and any pen-up/pen-down structure are gone, so the same symbol drawn
+    with a different orientation or stroke order gives a different series.
+  label_semantics_changed: "no"
+
+benchmark_task:
+  description: Classify a length-398 x-motion series into one of six classes.
+  is_same_as_original: "yes"
+
+verdict: native-tsc
+verdict_rationale: >
+  The recorded quantity is hand motion unfolding in time while a symbol is
+  drawn, so the axis is time despite the archive's IMAGE tag - this is not a
+  contour dataset.
+known_issues:
+  - 'archive_type_tag is IMAGE, but the archive''s own description is of recorded drawing motion; the tag is misleading here.'
+  - 'Class count does not match the description: the page says "There were 3 possible symbols" while the dataset has 6 classes. The mapping from symbols to classes is unexplained.'
+  - 25 train / 995 test - about four training instances per class against a very large test set.
+  - Thirteen subjects each contributing ~30 attempts; repeated attempts by one person are highly dependent and writer identity is a plausible shortcut, with no subject-disjoint split documented.
+  - 'Sampling regime unverified: if the series were resampled along the trajectory rather than in time (as happened to PenDigits), the time verdict would need revisiting. A human verifier should check the raw files for constant-time sampling.'
+  - No primary source located.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.9829
+    acc_permuted: 0.8764
+    drop: 0.1065
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 5.5
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.9829
+    acc_raw_values: 0.1739
+    acc_summary_stats: 0.1739
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.809
+    gap_summary: 0.809
+    seed: 0
+    runtime_s: 3.3
+    run: '2026-09-04'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=Symbols
+  - Dau et al., "The UCR Time Series Archive", arXiv:1810.07758

@@ -1,0 +1,182 @@
+name: Wafer
+archive:
+- UCR
+archive_type_tag: SENSOR
+n_train: 1000
+n_test: 6164
+series_length: 152
+n_channels: 1
+n_classes: 2
+archive_page:
+  description: "This dataset was formatted by R. Olszewski as part of his thesis  Generalized\
+    \ feature extraction for structural\tpattern recognition\nin time-series data  at Carnegie\
+    \ Mellon University, 2001. Wafer data relates to semi-conductor microelectronics\tfabrication.\
+    \ A\ncollection of inline process control\tmeasurements recorded from various sensors\
+    \ during the processing of silicon wafers for\nsemiconductor fabrication constitute the\
+    \ wafer database; each data set in the wafer database contains the measurements recorded\
+    \ by one\nsensor during the processing of one wafer by one tool. The two classes are normal\
+    \ and abnormal. There is a large class imbalance\nbetween normal and abnormal (10.7% of\
+    \ the train are abnormal, 12.1% of the test)."
+  donated_by: R. Olszewski
+  data_source_link: http://dl.acm.org/citation.cfm?id=935627
+  second_link: ''
+original_problem:
+  description: >
+    Semiconductor manufacturing process control. Plasma-etch tools used to
+    fabricate silicon wafers carry large numbers of in-line sensors; if a tool
+    drifts outside tolerance during any of the 250-plus processing steps, yield
+    and reliability suffer or the wafer is scrapped. Olszewski assembled a
+    database in which each record is the trace from one sensor during the
+    processing of one wafer by one tool, and domain experts labelled each record
+    normal or abnormal. He used it (alongside an ECG database) to evaluate
+    structure detectors for structural pattern recognition on time series.
+  prediction_target: >
+    whether the process run recorded by the sensor was normal or abnormal, as
+    judged by a domain expert
+  input_as_originally_posed: >
+    an in-line process-control measurement trace from one sensor on a
+    plasma-etch tool during the processing of one silicon wafer
+  task_family: device-monitoring
+  stakeholder_and_use: >
+    semiconductor fabs running statistical process control on etch tools —
+    catching an out-of-tolerance run early avoids scrapping wafers
+  source: >
+    Olszewski, "Generalized Feature Extraction for Structural Pattern
+    Recognition in Time-Series Data", PhD thesis, Carnegie Mellon University,
+    CMU-CS-01-108, 2001, Sec. 4.3.2, p.
+    65: "A collection of in-line process-control measurements recorded from
+    various sensors during the processing of silicon wafers for semiconductor
+    fabrication constitute the wafer database; each data set in the wafer
+    database contains the measurements recorded by one sensor during the
+    processing of one wafer by one tool." Same section, p. 66: "The data sets
+    contained in each database were analyzed by appropriate domain experts, and
+    a label of normal or abnormal was assigned to each data set. Of the 1194
+    data sets in the wafer database, 1067 data sets were identified as normal
+    and 127 data sets were identified as abnormal." On which sensors: p. 66-67,
+    "six parameters have been identified by domain experts as being critical for
+    monitoring purposes: radio frequency forward power, radio frequency
+    reflected power, chamber pressure, 405 nanometer (nm) emission, 520
+    nanometer (nm) emission, and direct current bias" and p. 69, "Previous
+    experiments have shown that the most accurate classification of wafer data
+    sets can be accomplished using the 405 nm and 520 nm parameters." The raw
+    database (wafer.tar.gz, linked from Olszewski's data page) holds one file
+    per wafer and sensor, named <run>_<wafer>.<sensor>, 1067 normal and 127
+    abnormal wafers with six sensor files each, plus a fault annotation per
+    abnormal wafer.
+  provenance_confidence: high
+
+translation:
+  transformation: [resampling, z-normalization]
+  # Nothing is selected: the raw files are already one sensor each, and all
+  # six sensors are shipped, as separate univariate series (see known_issues).
+  what_the_x_axis_is: time
+  sampling: >
+    One value per sensor sample during the etch of one wafer; the sampling rate
+    is undocumented. Raw lengths vary (thesis Table 4.4, p.70: normal 114-152,
+    abnormal 104-198). Measured reconstruction (2026-11-01, all 7164 shipped
+    series matched to a raw file, max error 5e-7): normal traces are extended
+    to 152 by continuing the slope of their last two values, then
+    z-normalized; abnormal traces are extended the same way to 198,
+    z-normalized, polyphase-resampled to 152 (scipy resample_poly 76/99) and
+    z-normalized again. This is an equivalent reconstruction, not the
+    historical conversion code.
+  information_lost_or_added: >
+    The six sensor traces of each wafer are shipped as six unrelated series:
+    sensor identity and the grouping by wafer and run are dropped. Lengths are
+    made equal by extrapolated tails (normal) or extrapolation plus
+    resampling (abnormal), so the end of each series differs by class (see
+    known_issues). z-normalization removes physical scale.
+  label_semantics_changed: "no"
+  # Expert normal/abnormal labels carried over unchanged; shipped labels agree
+  # with the raw normal/abnormal directories for all 7164 matched series.
+
+benchmark_task:
+  description: >
+    Classify a z-normalized length-152 trace from one of six etch-tool sensors
+    as coming from a normal or abnormal wafer.
+  is_same_as_original: "yes"
+  # The thesis already classified single-sensor traces (the 405 nm and 520 nm
+  # parameters separately, p.69); combining sensors is its future work (p.97).
+
+verdict: native-tsc
+verdict_rationale: >
+  Consecutive sensor samples recorded during a real manufacturing process,
+  with expert labels about that process; only the extrapolated or resampled
+  tails depart from the recorded time axis.
+known_issues:
+  - >
+    All six sensors of every wafer are shipped (measured): 7164 = 6 x 1194
+    series, 6402 = 6 x 1067 normal and 762 = 6 x 127 abnormal, matching the
+    thesis counts (Table 4.3). Train has 1000 series, test 6164.
+  - >
+    Train and test share wafers and production runs (measured): 690 wafers
+    have sensor series on both sides, every training series has another
+    sensor of its wafer in test, 3140 of 6164 test series share a wafer with
+    training, and 99 of 104 runs ("the run (or batch) number", raw README)
+    appear on both sides (6134 test series). No series is duplicated: 7164
+    unique, 0 test series identical to a training series. Run and sensor
+    together (measured 2026-11-04): 5122 of 6164 test series have a training
+    series from the same run and the same sensor (another wafer), 356 of the
+    665 abnormal ones; the cross-sensor wafer sharing is therefore not the only
+    shared source. The thesis states no 1000/6164 split; who made it and how is
+    undocumented.
+  - >
+    The classes are formatted differently (measured): the absolute second
+    difference of the last three values is below 1e-6 for 6398 of 6402 normal
+    series and 0 of 762 abnormal series, so a rule chosen after inspecting the
+    data makes 1 train and 3 test errors. How much published classifiers use
+    this is not established.
+  - >
+    The archive description's "10.7% of the train are abnormal, 12.1% of the
+    test" are abnormal-to-normal ratios (97/903, 665/5499); the abnormal
+    proportions are 9.7% and 10.8%. Always predicting normal errs on 10.8% of
+    the test set.
+  - >
+    Abnormal is heterogeneous. Raw fault annotations: Oxide dummy 51, Double
+    etched 16, Resist no poly 15, Nitride 15, unknown 7, and others; one says
+    "This wafer may have been OK, but it is not clear that this is the case"
+    (1639_07). Class is strongly tied to run: of 104 runs, 78 are normal-only,
+    22 abnormal-only and 4 mixed.
+  - >
+    The thesis quote (p.69) is that the 405 nm and 520 nm records "were
+    collected simultaneously and are representative of the same sequence of
+    wafers"; its claim that these two parameters classify best rests on prior
+    work [22], an unpublished manuscript not consulted.
+  - >
+    Dau et al. 2019 (arXiv:1810.07758), Table II, list Wafer among twelve
+    "solved" data sets on which at least one algorithm reaches 100% accuracy;
+    Euclidean 1-NN errs on 28 of 6164 test series (0.0045, measured).
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.9992
+    acc_permuted: 0.995
+    drop: 0.0042
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 7.0
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.9992
+    acc_raw_values: 0.9929
+    acc_summary_stats: 0.9813
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.0063
+    gap_summary: 0.0178
+    seed: 0
+    runtime_s: 3.2
+    run: '2026-09-04'
+
+references:
+- https://www.timeseriesclassification.com/description.php?Dataset=Wafer
+- https://timeseriesclassification.com/aeon-toolkit/Wafer.zip (shipped description and train/test files)
+- >
+  Olszewski, "Generalized Feature Extraction for Structural Pattern Recognition
+  in Time-Series Data", PhD thesis, Carnegie Mellon University, CMU-CS-01-108,
+  2001, Sec. 4.3.2 pp.65-70, Tables 4.3-4.4; https://www.cs.cmu.edu/~bobski/pubs/tr01108-twosided.pdf
+- Olszewski's raw wafer database and README - http://www.cs.cmu.edu/~bobski/data/wafer.tar.gz
+- Dau et al., "The UCR Time Series Archive", arXiv:1810.07758, Table II

@@ -1,0 +1,135 @@
+name: Ham
+archive:
+- UCR
+archive_type_tag: SPECTRO
+n_train: 109
+n_test: 105
+series_length: 431
+n_channels: 1
+n_classes: 2
+archive_page:
+  description: 'Food spectrographs are used in chemometrics to classify food types,
+
+    a task that has obvious applications in food safety and quality
+
+    assurance. The ham data includes measurements from 19 Spanish and
+
+    18 French dry-cured hams. Triplicate lanes of duplicate extractions
+
+    (giving ~6 data vectors per sample), pre-processed and aligned as
+
+    described in  “Sodium dodecyl sulphate-polyacrylamide gel
+
+    electrophoresis of proteins in dry-cured hams: Data registration
+
+    and multivariate analysis across multiple gels” , Olias R. et.
+
+    al., Electrophoresis 27 (7) 1288-1299.'
+  donated_by: K. Kemsley, A. Bagnall
+  data_source_link: http://asu.ifr.ac.uk/example-datasets-for-download/
+  second_link: http://www.ncbi.nlm.nih.gov/pubmed/16502462
+original_problem:
+  description: >
+    A provenance-verification study for protected regional foods, run at the
+    Institute of Food Research, Norwich: can Spanish and French dry-cured hams
+    be distinguished by their protein profiles? This is NOT spectroscopy - the
+    measurement is SDS-PAGE gel electrophoresis. Abstract (Electrophoresis
+    27(7):1288-1299, 2006, read via Europe PMC): "This study investigates
+    whether dry-cured hams from two European countries can be distinguished
+    using SDS-PAGE. Thirty-seven commercial hams (19 Spanish, 18 French) were
+    used in the study. Four protein fractions were extracted from each sample,
+    with sufficient material prepared to allow each fraction to be analysed in
+    triplicate lanes. The complete extraction process was carried out in
+    duplicate. ... In total, 118 gels were prepared. Mathematical routines were
+    developed using a matrix language to process the gel image files.
+    Procedures were written to carry out 'within-gel' image correction, lane
+    extraction and normalization, 'between-gel' data registration and linear
+    discriminant analysis (LDA) of each fraction's data".
+  prediction_target: country of origin of a dry-cured ham (Spanish vs French)
+  input_as_originally_posed: >
+    a stained SDS-PAGE gel image; the analysed unit is one extracted, corrected
+    and registered lane from that image
+  task_family: other
+  # `other`: proteomic gel electrophoresis. Not `spectroscopy` - the ordered
+  # axis is electrophoretic migration distance (a proxy for protein molecular
+  # weight), not wavelength or frequency, and the raw datum is a gel image.
+  stakeholder_and_use: regional-speciality food provenance verification (PDO/PGI enforcement)
+  source: >
+    Olias, Maldonado, Radreau, Le Gall, Mulholland, Colquhoun, Kemsley,
+    "Sodium dodecyl sulphate-polyacrylamide gel electrophoresis of proteins in
+    dry-cured hams: data registration and multivariate analysis across multiple
+    gels", Electrophoresis 27(7), 1288-1299, 2006, doi:10.1002/elps.200500466.
+    Abstract read via the Europe PMC REST API; full text not reached. The
+    donor's own page, IFR Analytical Sciences "Example Datasets for Download",
+    describes the release: "214 Lanes of SDS-PAGE data, from 19 Spanish and 18
+    French dry-cured hams; data matrix size [214 x 431]. Triplicate lanes of
+    duplicate extractions (giving ~6 data vectors per sample), pre-processed
+    and aligned". [214 x 431] matches the archive exactly (109 + 105 = 214
+    series of length 431).
+  provenance_confidence: high
+
+translation:
+  transformation: [spectrum-as-series, spatial-resampling]
+  what_the_x_axis_is: position
+  sampling: >
+    431 grayscale intensity values read along one lane of a gel image, i.e.
+    sampled along the electrophoretic migration axis; peaks are protein bands,
+    and position maps monotonically onto molecular weight
+  information_lost_or_added: >
+    Two dimensions of the gel image are collapsed to one profile per lane
+    (within-gel correction plus lane extraction and normalisation), and the
+    position axis is then warped by the paper's genetic-algorithm between-gel
+    registration so that profiles from 118 different gels line up. The x-axis
+    a TSC model sees is therefore a curator-aligned image coordinate, not a
+    physical measurement axis - the registration is exactly the step that
+    makes point-to-point comparison meaningful, and it was fitted on the whole
+    corpus.
+  label_semantics_changed: "no"
+
+benchmark_task:
+  description: Classify a univariate length-431 registered SDS-PAGE lane profile as Spanish or French ham.
+  is_same_as_original: "yes"
+  # Same provenance question and the same registered lane vectors the source
+  # study analysed.
+
+verdict: translated-modality
+verdict_rationale: >
+  The original datum is a two-dimensional gel image; the series is an
+  intensity profile read along the migration axis of one lane of it, so the
+  ordering re-parameterises a non-temporal, spatial modality rather than being
+  any kind of signal in time.
+known_issues:
+  - 'Mis-tagged in the archive as SPECTRO. This is gel electrophoresis, not spectroscopy; there is no wavelength anywhere in it. Anyone treating it as another Kemsley FTIR dataset alongside Coffee/Meat/OliveOil/Strawberry is wrong about the modality.'
+  - 'A counter-argument a human should weigh: one could call the migration profile the natural 1-D measurement (as with a chromatogram) and rule ordered-not-temporal instead of translated-modality. I chose translated-modality because the paper''s own pipeline starts from "gel image files" and does lane extraction from them. The verdict, not the facts, is what is in question here.'
+  - 'Identity shortcut / split independence: only 37 physical hams produce 214 lanes (~6 lanes per ham, from triplicate lanes of duplicate extractions). The archive does not say whether the 109/105 split is ham-disjoint; if it is not, lanes of the same ham sit on both sides and the reported accuracy partly measures ham recognition. A nearest-neighbour check on the shipped data found no near-duplicate lane pairs across the split (median nearest/second-nearest distance ratio 0.95), but that does not settle whether same-ham lanes straddle it. This is the single most important thing to check before quoting an accuracy for this dataset.'
+  - 'The between-gel registration was fitted across the whole corpus before any split, so the preprocessing itself is not split-clean.'
+  - 'Commercial hams only, two countries, one study - nothing licenses treating this as a general provenance test.'
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.7143
+    acc_permuted: 0.6857
+    drop: 0.0286
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 5.8
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.7143
+    acc_raw_values: 0.7048
+    acc_summary_stats: 0.5619
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.0095
+    gap_summary: 0.1524
+    seed: 0
+    runtime_s: 2.8
+    run: '2026-09-04'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=Ham
+  - 'Olias et al., Electrophoresis 27(7):1288-1299, 2006, doi:10.1002/elps.200500466 (abstract, via Europe PMC REST API)'
+  - 'IFR Analytical Sciences, "Example Datasets for Download" (http://asu.ifr.ac.uk/example-datasets-for-download/, via the Internet Archive)'

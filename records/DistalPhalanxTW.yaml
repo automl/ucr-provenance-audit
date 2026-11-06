@@ -1,0 +1,138 @@
+name: DistalPhalanxTW
+archive:
+- UCR
+archive_type_tag: IMAGE
+n_train: 400
+n_test: 139
+series_length: 80
+n_channels: 1
+n_classes: 6
+archive_page:
+  description: 'This series of 11 classification problems were created as part of Luke Davis''s
+    PhD titled "Predictive Modelling of Bone Ageing". They are all derived from the same images,
+    extracted from Cao et al. "Digital hand atlas and web-based bone age assessment: system
+    design and implementation". They are designed to test the efficacy of hand and bone outline
+    detection and whether these outlines could be helpful in bone age prediction. Algorithms
+    to automatically extract the hand outlines and then the outlines of three bones of the
+    middle finger (proximal, middle and distal phalanges) were applied to over 1300 images,
+    and three human evaluators labelled the output of the image outlining as correct or incorrect.
+    This generated three classification problems: DistalPhalanxOutlineCorrect; MiddlePhalanxOutlineCorrect;
+    and ProximalPhalanxOutlineCorrect. The next stage of the project was to use the outlines
+    to predict information about the subjects age. The three problems {em DistalPhalanxOutlineAgeGroup,
+    MiddlePhalanxOutlineAgeGroup and ProximalPhalanxOutlineAgeGroup} involve using the outline
+    of one of the phalanges to predict whether the subject is one of three age groups: 0-6
+    years old, 7-12 years old and 13-19 years old. Note that these problems are aligned by
+    subject, and hence can be treated as a multi dimensional TSC problem. Problem Phalanges
+    contains the concatenation of all three problems. Bone age estimation is usually performed
+    by an expert with an algorithm called Tanner-Whitehouse. This involves scoring each bone
+    into one of seven categories based on the stage of development. The final three bone image
+    classification problems, DistalPhalanxTW, MiddlePhalanxTW and ProximalPhalanxTW}, involve
+    predicting the Tanner-Whitehouse score (as labelled by a human expert) from the outline.'
+  donated_by: L. Davis, A. Bagnall
+  data_source_link: https://www.uea.ac.uk/computing/machine-learning/predictive-modelling-of-bone-ageing
+  second_link: http://www.ncbi.nlm.nih.gov/pubmed/10940607
+original_problem:
+  description: >
+    All eleven "bone ageing" problems in the archive come from one project:
+    Luke Davis's PhD "Predictive Modelling of Bone Ageing" at UEA, using hand
+    radiographs from the Digital Hand Atlas (Cao et al.). Bagnall & Davis
+    (arXiv:1406.4781, Sec. 1) set the clinical problem out: "Bone age assessment
+    typically involves estimating the age of a patient from a radiograph by
+    quantifying the development of the bones of the non-dominant hand. It is
+    used to evaluate whether a child's bones are developing at an acceptable
+    rate, and to monitor whether certain treatments are affecting a patient's
+    skeletal development." Their pipeline (ASMA) has three stages: "segment and
+    verify hand outline; segment and verify bones; use the bone outlines to
+    construct models of age" (Sec. 3), and the archive problems are slices of
+    those stages. The images are "radiographs taken by the Childrens Hospital
+    Los Angeles. The age range of subjects is 2-18" (Sec. 3).
+    This record is the Tanner-Whitehouse stage problem for the distal
+    phalanx. Bagnall & Davis, Sec. 2.2, describe the scoring system: "In 1975,
+    Tanner et al. published a scoring system commonly referred to as TW2... Each
+    bone has various stages associated with it and each stage has certain
+    descriptors to use in the classification." Their Sec. 5 ("Classification of
+    Tanner-Whitehouse Stages") reports the same split sizes as this record.
+  prediction_target: Tanner-Whitehouse skeletal maturity stage of the distal phalanx of the middle finger
+  input_as_originally_posed: >
+    plain radiograph of a child's non-dominant hand, from which the outline of
+    the distal phalanx of the middle finger was automatically segmented
+  task_family: image-classification
+  stakeholder_and_use: >
+    paediatric radiology - bone age assessment is performed daily in hospitals
+    to check whether a child's skeletal development is on track
+  source: >
+    Bagnall & Davis, "Predictive Modelling of Bone Age through Classification and
+    Regression of Bone Shapes", Technical Report CMPC14-02, arXiv:1406.4781
+    (read); images from Cao et al., "Digital hand atlas and web-based bone age
+    assessment: system design and implementation" (not read; cited by the archive
+    page and by Bagnall & Davis).
+  provenance_confidence: high
+
+translation:
+  transformation: [contour-unrolling, resampling, concatenation, z-normalization]
+  what_the_x_axis_is: arc-length
+  sampling: >
+    Bagnall & Davis, Sec. 3.1 "1-D Outline Representation": "The one-dimensional
+    series is obtained by calculating the Euclidean distance of each pixel along
+    the outline of the bone. We align the 1-D series by using the midpoint of
+    the phalanx as the starting point of the series and moving around the hard
+    tissue in a clockwise direction. If an epiphysis is present the series is
+    concatenated to the phalanx series... the outlines were resampled to ensure
+    each was the same length as the shortest series (80 attributes, 50 phalanx,
+    and 30 epiphysis). If no epiphysis is present the phalanx series is followed
+    by 30 zeros."
+  information_lost_or_added: >
+    Bone density and internal texture - which clinicians use - are discarded;
+    only the segmented outline remains. Resampling to 80 points removes absolute
+    bone size, a strong age signal. The concatenation convention adds
+    information that is not shape at all: the presence or absence of an
+    epiphysis is encoded as a flat 30-point block at the end of every series,
+    and epiphyseal fusion is itself a direct maturity indicator.
+  label_semantics_changed: "no"
+
+benchmark_task:
+  description: Classify a length-80 distal-phalanx outline series into one of 6 Tanner-Whitehouse stages.
+  is_same_as_original: "yes"
+
+verdict: translated-modality
+verdict_rationale: >
+  The source modality is a radiograph; the released series is a segmented bone
+  outline traversed by arc-length, so the ordering is spatial rather than temporal.
+known_issues:
+  - 'Encoding artifact: the last 30 points are a flat block when no epiphysis is present (padded zeros), so a classifier can read epiphysis presence off the padding rather than off the shape - and that is one of the strongest age cues in the clinical task.'
+  - All eleven bone-ageing problems are derived from the same ~1300 radiographs of the same subjects; the distal, middle and proximal problems are subject-aligned, so results across these datasets are not independent and cross-dataset averages double-count the same patients.
+  - 'Subject-level leakage is not controlled: nothing on the archive page states that a subject''s bones cannot appear in both train and test across the sibling problems.'
+  - Dau et al. (arXiv:1810.07758, Table I) list several of these problems among fourteen datasets whose train/test split was reversed for the 2018 archive expansion, so pre-2018 and post-2018 results are not comparable.
+  - Cohort is restricted to ages 2-18 from one hospital, with four recorded ethnicities; demographic composition is a plausible confound not exposed in the released series.
+  - 'Six classes are used here although the Tanner-Whitehouse RUS system defines seven stages; how stages were merged, or which were unobserved, is not documented.'
+  - 'Labels are an expert''s TW stage assignment; TW staging is subjective and the archive exposes no inter-rater information.'
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.6547
+    acc_permuted: 0.6691
+    drop: -0.0144
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 5.3
+    run: '2026-09-03'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.6547
+    acc_raw_values: 0.6331
+    acc_summary_stats: 0.5755
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.0216
+    gap_summary: 0.0791
+    seed: 0
+    runtime_s: 3.5
+    run: '2026-09-03'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=DistalPhalanxTW
+  - Bagnall & Davis, "Predictive Modelling of Bone Age through Classification and Regression of Bone Shapes", arXiv:1406.4781, 2014
+  - 'Cao et al., "Digital hand atlas and web-based bone age assessment: system design and implementation" (cited, not read)'
+  - Dau et al., "The UCR Time Series Archive", arXiv:1810.07758

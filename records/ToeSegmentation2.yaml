@@ -1,0 +1,170 @@
+name: ToeSegmentation2
+archive:
+- UCR
+archive_type_tag: MOTION
+n_train: 36
+n_test: 130
+series_length: 343
+n_channels: 1
+n_classes: 2
+archive_page:
+  description: 'The ToeSegmentation data are derived from the CMU Graphics Lab
+
+    Motion Capture Database(CMU).
+
+
+    Motions in the database containing the keyword walk are classified
+
+    by their motion descriptions into two categories.
+
+
+    The first is the normal walk, with only walk in the motion
+
+    descriptions.
+
+
+    The other is the abnormal walk, with the motion descriptions
+
+    containing: hobble walk, walk wounded leg, walk on toes bent
+
+    forward,hurt leg walk, drag bad leg walk, or hurt stomach walk. In
+
+    the abnormal walks, the actors are pretending to have difficulty
+
+    walking normally.
+
+
+    ToeSegmentation1 is the X-Axis, ToeSegmentation2 is the Y-Axis. The
+
+    data was used in the paper   Time series shapelets: a novel
+
+    technique that allows accurate, interpretable and fast
+
+    classification  with different length series. For the archive
+
+    it has been length normalised by truncating.'
+  donated_by: L. Ye, E. Keogh
+  data_source_link: http://mocap.cs.cmu.edu/
+  second_link: http://alumni.cs.ucr.edu/~lexiangy/shapelet.html
+original_problem:
+  description: >
+    There is no original prediction problem. The series come from the CMU Graphics Lab
+    Motion Capture Database, a general-purpose optical motion-capture resource built
+    for graphics and animation research, in which each recorded take carries a
+    free-text motion description. The classification problem was constructed by Lexiang
+    Ye and Eamonn Keogh for their shapelet work: per the archive page, "Motions in the
+    database containing the keyword walk are classified by their motion descriptions
+    into two categories. The first is the normal walk, with only walk in the motion
+    descriptions. The other is the abnormal walk, with the motion descriptions
+    containing: hobble walk, walk wounded leg, walk on toes bent forward, hurt leg
+    walk, drag bad leg walk, or hurt stomach walk. In the abnormal walks, the actors
+    are pretending to have difficulty walking normally."
+  prediction_target: normal walk vs "abnormal" (acted impaired) walk
+  input_as_originally_posed: optical motion capture of an actor walking (marker trajectories)
+  task_family: activity-recognition
+  stakeholder_and_use: >
+    Nominally gait analysis / clinical or surveillance gait screening; in practice this
+    was assembled as a shapelet-interpretability demonstration, and the actors are not
+    impaired.
+  source: >
+    CMU Graphics Lab Motion Capture Database (http://mocap.cs.cmu.edu/) as the data
+    source, and Ye & Keogh, "Time series shapelets: a novel technique that allows
+    accurate, interpretable and fast classification" (Data Mining and Knowledge
+    Discovery, 2011) as the first use, per the archive page. The KDD 2009 conference
+    version of the shapelet paper (cs.ucr.edu/~eamonn/shaplet.pdf) was read and does
+    NOT describe this dataset; the DMKD 2011 journal version, which does, is paywalled
+    and was not reached.
+  provenance_confidence: medium
+  # The archive page's account of how the labels were derived is specific and
+  # self-consistent, and the CMU source is unambiguous. Not `high` because the paper
+  # that would state which marker and which axis were extracted, and how gait cycles
+  # were segmented, was not read.
+
+translation:
+  transformation: [channel-selection, windowing, z-normalization]
+  what_the_x_axis_is: time
+  sampling: >
+    One series per walking segment, the Y axis of a single motion-capture marker,
+    "length normalised by truncating" to 343 samples. The CMU database's capture rate
+    (120 Hz raw) is not restated by the archive, and the archive does not state which
+    marker was used - despite the dataset name suggesting a toe marker.
+  information_lost_or_added: >
+    Motion capture gives a full 3D skeleton over time; this dataset keeps one
+    coordinate of one marker, so the coordination between limbs - which is what
+    actually distinguishes a limp from a normal gait - is gone. Truncation to a common
+    length crops the ends of longer segments instead of resampling them, and
+    z-normalisation removes stride amplitude.
+  label_semantics_changed: >
+    yes: the labels were not measured. They were derived by the curators by keyword
+    matching against the free-text motion descriptions that CMU's annotators wrote.
+
+benchmark_task:
+  description: >
+    Classify a length-343 single-axis (Y axis) marker trajectory from a walking motion
+    as normal or abnormal. 36 train / 130 test.
+  is_same_as_original: different-task
+
+verdict: native-tsc
+verdict_rationale: >
+  A marker's coordinate sampled frame by frame during walking is a genuine temporal
+  motion signal; only the labels and the task were manufactured by the curators from
+  CMU's text metadata.
+known_issues:
+  - >
+    The "abnormal" gaits are ACTED. The archive page says so explicitly: "the actors
+    are pretending to have difficulty walking normally." A model that scores well has
+    learned what able-bodied actors do when asked to mime a limp, which is not the same
+    distribution as clinical gait pathology. Do not describe this as a gait-disorder
+    benchmark.
+  - >
+    Labels come from keyword matching on free-text descriptions, so they inherit
+    whatever inconsistency CMU's annotators had; a take described only as "walk" is
+    assumed normal by default.
+  - >
+    The CMU database has a small number of subjects and many takes per subject, and no
+    subject identifier ships with the archive version. Segments from the same actor
+    almost certainly appear in both train and test, so identity shortcut and train/test
+    dependence are both live and unverifiable from the released files.
+  - >
+    ToeSegmentation1 and ToeSegmentation2 are the X and Y axes of the same body of CMU
+    walking motions, so they are not independent datasets. Note however that they are
+    also not simply paired: they differ in instance counts (40/228 vs 36/130) and in
+    length (277 vs 343), which the archive does not explain, so the correspondence
+    between the two is undocumented.
+  - >
+    "Length normalised by truncating" - the tail of longer walking segments is
+    discarded outright.
+  - >
+    The archive never states which marker the series comes from; the name implies a
+    toe marker but this is not documented.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.9231
+    acc_permuted: 0.7846
+    drop: 0.1385
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 5.4
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.9231
+    acc_raw_values: 0.8154
+    acc_summary_stats: 0.8154
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.1077
+    gap_summary: 0.1077
+    seed: 0
+    runtime_s: 3.5
+    run: '2026-09-04'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=ToeSegmentation2
+  - https://www.timeseriesclassification.com/description.php?Dataset=ToeSegmentation1
+  - http://mocap.cs.cmu.edu/
+  - 'Ye, L. & Keogh, E., "Time series shapelets: a novel technique that allows accurate, interpretable and fast classification", DMKD, 2011 (not reached; the KDD 2009 version at https://www.cs.ucr.edu/~eamonn/shaplet.pdf was read and does not cover this dataset)'
+  - Dau et al., "The UCR Time Series Archive", arXiv:1810.07758 (Sec. III-C, p. 3)

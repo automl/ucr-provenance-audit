@@ -1,0 +1,99 @@
+name: DiatomSizeReduction
+archive:
+- UCR
+archive_type_tag: IMAGE
+n_train: 16
+n_test: 306
+series_length: 345
+n_channels: 1
+n_classes: 4
+archive_page:
+  description: "Outlines of four types of diatoms: Gomphonema augur, Fragilariforma bicapitata,\
+    \ Stauroneis smithii\n and Eunotia tenella. There is size variation within class because\
+    \ \"Each successive generation of a clonaly reproducing diatom is slightly smaller than\
+    \ its forebears.\""
+  donated_by: ''
+  data_source_link: http://rbg-web2.rbge.org.uk/DIADIST/index.htm?srseries.htm&main
+  second_link: ''
+original_problem:
+  description: >
+    Part of the DIADIST project ("Diatom and Desmid Identification by Shape and
+    Texture", BBSRC Bioinformatics Programme grant 754/BIO14262, Cardiff
+    University with the Royal Botanic Garden Edinburgh), whose stated aim is
+    "to investigate methods to enable the visual indexing of images and drawings
+    of biological specimens held in a database" (project description page). The
+    specific image sets behind this dataset document a taxonomic nuisance: "the
+    size (especially the length) of successive generations of diatoms in a clone
+    decreases during the vegetative part of the life cycle... Concomitant with
+    the size reduction there is often a drastic change of valve shape"
+    (size-reduction series page). Four taxa were imaged in high replication "As
+    part of our research into the development of active shape models (ASM) and
+    active appearance models (AAM)... to explore the distribution of shapes and
+    valve face features in morphospace".
+  prediction_target: diatom taxon (Gomphonema augur, Fragilariforma bicapitata, Stauroneis smithii, Eunotia tenella)
+  input_as_originally_posed: light-microscope image of a diatom valve
+  task_family: image-classification
+  stakeholder_and_use: >
+    diatomists and ecological/water-quality monitoring, where size reduction
+    within a clone makes automated identification unreliable
+  source: >
+    DIADIST project pages, Royal Botanic Garden Edinburgh (read: project
+    description and "Diatom size reduction image sets for shape and appearance
+    models"). Who converted the outlines to series, and how, is not documented -
+    the archive page lists no donor.
+  provenance_confidence: medium
+
+translation:
+  transformation: [contour-unrolling, resampling, z-normalization]
+  what_the_x_axis_is: arc-length
+  sampling: 345 points around the valve outline; the reference point and traversal direction are not documented.
+  information_lost_or_added: >
+    Valve ornamentation is dropped, and - more pointedly - z-normalization
+    removes absolute size, which is precisely the phenomenon the source image
+    sets were assembled to document. What remains is the shape change that
+    accompanies size reduction.
+  label_semantics_changed: "no"
+
+benchmark_task:
+  description: Classify a length-345 outline series into one of four diatom taxa.
+  is_same_as_original: narrowed
+  # Same taxonomic labels; only the contour is available and only four taxa.
+
+verdict: translated-modality
+verdict_rationale: >
+  A microscope image reduced to its outline traversed by arc-length; the
+  ordering is spatial and the source modality is an image.
+known_issues:
+  - '16 train / 306 test with 4 classes: four training instances per class, one of the most extreme train/test ratios in the archive.'
+  - Instances within a class are successive generations of a clone, so they are strongly dependent (near-duplicate neighbouring generations) rather than i.i.d. samples.
+  - Because instances are ordered by valve length in the source collection, a split that is not stratified by generation can put a size range entirely in train or test.
+  - The series-generation step is undocumented and the donor is unrecorded on the archive page.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.9281
+    acc_permuted: 0.9641
+    drop: -0.0359
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 4.7
+    run: '2026-09-03'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.9281
+    acc_raw_values: 0.3007
+    acc_summary_stats: 0.3007
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.6275
+    gap_summary: 0.6275
+    seed: 0
+    runtime_s: 2.4
+    run: '2026-09-03'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=DiatomSizeReduction
+  - DIADIST project description - https://websites.rbge.org.uk/DIADIST/main.htm
+  - DIADIST diatom size reduction image sets - https://websites.rbge.org.uk/DIADIST/srseries.htm

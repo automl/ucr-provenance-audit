@@ -1,0 +1,77 @@
+name: Coffee
+archive:
+- UCR
+archive_type_tag: Spectro
+n_train: 28
+n_test: 28
+series_length: 286
+n_channels: 1
+n_classes: 2
+
+original_problem:
+  description: >
+    A chemometrics study in food quality assurance: distinguish the two main
+    commercial coffee species, Arabica and Robusta, in instant coffee using
+    Fourier-transform infrared (FTIR) spectroscopy, as a cheap alternative to
+    wet-chemistry authentication (Arabica commands higher prices, so
+    substitution fraud is the practical concern).
+  prediction_target: coffee variety (Arabica vs Robusta)
+  input_as_originally_posed: FTIR spectrum of an instant-coffee sample
+  task_family: spectroscopy
+  stakeholder_and_use: food-authenticity testing labs / regulators
+  source: >
+    Briandet, Kemsley, Wilson, "Discrimination of Arabica and Robusta in
+    Instant Coffee by Fourier Transform Infrared Spectroscopy and
+    Chemometrics", J. Agricultural and Food Chemistry, 1996
+  provenance_confidence: high
+
+translation:
+  transformation: [spectrum-as-series]
+  what_the_x_axis_is: wavelength
+  sampling: 286 absorbance values over the measured wavenumber range
+  information_lost_or_added: >
+    None structurally, but the "series" ordering is the spectrometer's
+    wavelength grid; neighboring points are correlated for physical, not
+    temporal, reasons. Chemometrics would treat this with PLS/derivative
+    preprocessing, not sequence models.
+  label_semantics_changed: "no"
+
+benchmark_task:
+  description: Classify a univariate length-286 series as Arabica or Robusta.
+  is_same_as_original: "yes"
+  # Same labels and same input values; only the framing (chemometrics -> TSC) changed.
+
+verdict: ordered-not-temporal
+verdict_rationale: >
+  The task is the original one, but the x-axis is wavelength; this is a
+  functional-data / chemometrics problem, not a time series.
+known_issues:
+  - Very small (28/28); adopted into TSC via Bagnall et al., SDM 2012.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 1.0
+    acc_permuted: 1.0
+    drop: 0.0
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 4.9
+    run: '2026-09-03'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 1.0
+    acc_raw_values: 0.5357
+    acc_summary_stats: 0.5357
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.4643
+    gap_summary: 0.4643
+    seed: 0
+    runtime_s: 2.7
+    run: '2026-09-03'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=Coffee
+  - Briandet et al., J. Agric. Food Chem., 1996

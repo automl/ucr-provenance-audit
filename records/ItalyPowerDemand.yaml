@@ -1,0 +1,79 @@
+name: ItalyPowerDemand
+archive:
+- UCR
+archive_type_tag: Sensor
+n_train: 67
+n_test: 1029
+series_length: 24
+n_channels: 1
+n_classes: 2
+
+original_problem:
+  description: >
+    Hourly electrical power demand recorded in Italy (1997). The benchmark
+    task — decide whether a given day's 24-hour demand curve comes from the
+    cold season (October-March) or the warm season (April-September) — was
+    defined by Keogh et al. for the "Intelligent Icons" paper, i.e. the label
+    was constructed by the curators from the timestamp rather than posed by
+    the utility that recorded the data.
+  prediction_target: season of the day (Oct-Mar vs Apr-Sep)
+  input_as_originally_posed: continuous power-demand meter readings
+  task_family: demand-and-load-analysis
+  stakeholder_and_use: >
+    Utilities analyze demand curves for forecasting/planning, but
+    season-from-load-shape is a curator-constructed task, not an operational one.
+  source: >
+    Keogh, Wei et al., "Intelligent Icons: Integrating Lite-Weight Data Mining
+    and Visualization into GUI Operating Systems", ICDM 2006
+  provenance_confidence: high
+
+translation:
+  transformation: [windowing, z-normalization]
+  what_the_x_axis_is: time
+  sampling: one calendar day per series, 24 hourly values
+  information_lost_or_added: >
+    A single year-long demand series sliced into daily windows; the label is
+    derived from the calendar, so train and test days come from the same
+    underlying year of one country's demand.
+  label_semantics_changed: "yes: label invented by curators (season from timestamp), not part of the original data collection"
+
+benchmark_task:
+  description: Classify a 24-point daily load curve as winter-half or summer-half of the year.
+  is_same_as_original: different-task
+
+verdict: native-tsc
+verdict_rationale: >
+  The signal is genuinely temporal, but note the task itself is
+  curator-constructed from timestamps — the "original problem" is data
+  exploration, not a prediction task anyone needed solved.
+known_issues:
+  - Label derived from metadata (date), not an external ground truth.
+  - All series are windows of one underlying series (one country, one year) — i.i.d. assumptions across train/test are questionable.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.9631
+    acc_permuted: 0.9689
+    drop: -0.0058
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 5.3
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.9631
+    acc_raw_values: 0.965
+    acc_summary_stats: 0.7201
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: -0.0019
+    gap_summary: 0.243
+    seed: 0
+    runtime_s: 3.2
+    run: '2026-09-04'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=ItalyPowerDemand
+  - Keogh et al., ICDM 2006 (Intelligent Icons)

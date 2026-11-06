@@ -1,0 +1,140 @@
+name: Rock
+archive:
+- UCR
+archive_type_tag: SPECTRO
+n_train: 20
+n_test: 50
+series_length: 2844
+n_channels: 1
+n_classes: 4
+archive_page:
+  description: 'The data contain 70 rock examples from the ASTER spectral library [1]. Each
+    series is rock spectral reflectance as a function of wavelength in micron, not time.  Classes
+    correspond to type of rocks.  - Class 1: marfic - Class 2: quartzite - Class 3: marble
+    - Class 4: schist  Data created by Baldridge, A. M., et al. (see [1]). Data edited by
+    Yan Zhu.  [1] Baldridge, A. M., et al. "The ASTER spectral library version 2.0." Remote
+    Sensing of Environment 113.4 (2009): 711-715.'
+  donated_by: Y. Zhu
+  data_source_link: ''
+  second_link: ''
+original_problem:
+  description: >
+    There was no original prediction problem. The data come from the ASTER
+    Spectral Library v2.0, a NASA/JPL reference collection built to support
+    interpretation of ASTER satellite imagery. Baldridge et al. (Remote Sensing
+    of Environment 113:711-715, 2009, read in full): "As part of the ASTER
+    activities, a library of over 2000 spectra of natural and man-made
+    materials was compiled ... The library includes spectra of rocks, minerals,
+    lunar soils, terrestrial soils, manmade materials, meteorites, vegetation,
+    snow and ice covering the visible through thermal infrared wavelength
+    region (0.4-15.4 um)." Sec. 2: "The rock samples used to generate the JPL
+    rock spectra were obtained from the Ward's 100 North American Rock
+    Collection, which contains 100 examples of the most common igneous,
+    metamorphic and sedimentary rocks." Sec. 3: "The Ward's rock samples are
+    approximately 3" x 4" and fresh surfaces were analyzed as whole rock
+    samples." The library's purpose is reference lookup, not classification;
+    the four-class rock-type task was defined by the UCR curator (Yan Zhu) by
+    selecting 70 of these library spectra. Caution: the Ward's/JPL passages
+    quoted above may attach to the wrong sub-collection - the three shipped
+    series verified bit-exact against the library are JHU-measured files
+    (jhu.becknic), whose provenance is documented separately (see
+    known_issues and the JHU library description reference).
+  prediction_target: rock type (mafic, quartzite, marble, schist), as labelled in the ASTER library metadata
+  input_as_originally_posed: laboratory reflectance spectrum of a whole rock specimen
+  task_family: spectroscopy
+  stakeholder_and_use: >
+    geologists and remote-sensing analysts use the library as a reference for
+    mineral mapping; no one posed this 70-sample supervised classification
+  source: >
+    Baldridge, Hook, Grove, Rivera, "The ASTER spectral library version 2.0",
+    Remote Sensing of Environment 113(4), 711-715, 2009,
+    doi:10.1016/j.rse.2008.11.007. Read in full (open PDF at
+    speclib.jpl.nasa.gov/downloads/2009-Baldridge.pdf). It documents the
+    spectra; it does not document the UCR extract - which 70 samples were
+    taken, how the 20/50 split was made, and how the 2844 points relate to the
+    library's two acquisition ranges (0.4-2.5 um and 2-15.4 um) are nowhere
+    stated.
+  provenance_confidence: medium
+
+translation:
+  transformation: [spectrum-as-series]
+  what_the_x_axis_is: wavelength
+  sampling: >
+    2844 reflectance values against wavelength in micrometres, 0.4-14.0112 um,
+    ascending but non-uniform (0.001 um steps from 0.4-0.8 um, 0.004 um from
+    0.8 um, then a denser converted-FT-IR grid above 2.5 um). This is the
+    library's own combined-range solid-rock product shipped verbatim: the
+    ECOSTRESS "all"-range rock files carry "Number of X Values: 2844" in their
+    headers, and three shipped series match library files bit-exactly
+    (rock.igneous.mafic.solid.all.{basalt_h1,gabbro_h1,diabase_h1}.jhu.becknic)
+    after reversing the library's descending storage order. The two-instrument
+    splice and the trim to 14.01 um were done upstream by the library, not by
+    the curator; the only curator-side transformation detected is the axis
+    reversal. Values are raw percent reflectance (global range 0.0-95.2); not
+    z-normalized, consistent with the 2018 briefing document's policy that
+    Fall-2018 additions were "kept as is".
+  information_lost_or_added: >
+    All of the library's ancillary data (locality, mineralogy, microprobe
+    chemistry, particle size, instrument) is dropped, leaving an anonymous
+    vector. Nothing about the ordering is temporal, and the spectral axis is
+    non-uniform and spliced across instruments (upstream, in the library's
+    combined product).
+  label_semantics_changed: >
+    "yes: the classes are the ASTER library's own rock-type metadata,
+    converted by the archive curator into a supervised target; the library was
+    never a classification dataset"
+
+benchmark_task:
+  description: Classify a univariate length-2844 reflectance spectrum as mafic, quartzite, marble or schist.
+  is_same_as_original: different-task
+  # Not a narrowing of an existing problem: there was no original prediction
+  # problem at all. `no-original-exists` is reserved for synthetic data, so
+  # `different-task` is the closest available value - see known_issues.
+
+verdict: ordered-not-temporal
+verdict_rationale: >
+  The x-axis is wavelength in micrometres, explicitly so on the archive page
+  ("as a function of wavelength in micron, not time"); this is a reflectance
+  spectrum, not a time series.
+known_issues:
+  - 'Extremely small: 70 samples total, and the 20/50 split is stratified 5 per class in training but 21/9/6/14 in test. One test error is worth 2 accuracy points, and the smallest class has six test cases.'
+  - 'Curator-defined task. The ASTER library is a reference collection; the four-class problem, the choice of 70 spectra, and the split were all made by the archive contributor and are documented nowhere. `different-task` is a forced choice here - the schema''s `no-original-exists` value is reserved for synthetic data, but arguably "no original task exists" is exactly the situation. Verified by exhaustive search (2026-08): the ~150-word per-dataset README (mirrored verbatim on the archive page) is the entire documented record - no rationale in the UCR archive paper (Dau et al., arXiv:1810.07758), BriefingDocument2018, either UCR dissertation (Zhu 2018, Dau 2019), the bake-off/UEA companion papers, GitHub trackers (aeon/sktime/tsml), or Wayback snapshots of the page.'
+  - 'The archive page spells the first class "marfic", presumably for "mafic" (a rock composition class, not a rock name - and one that sits at a different level of description from quartzite/marble/schist, which are specific metamorphic rock types). In the JHU files the shipped data actually comes from, all four labels appear to be same-level Subclass values (headers read "Subclass: Mafic" and "Subclass: Marble"; file paths follow rock.<class>.<subclass>...), so the labels are taxonomy-consistent - an earlier note here claimed they mixed two levels, based on the JPL paper''s Table 1, which describes the wrong sub-collection. The asymmetry in kind is real regardless: "mafic" pools genuinely different rocks (basalt, gabbro, diabase verified in class 1), while marble/quartzite/schist each pool specimens and variants of one rock kind (e.g. marble1 is dolomitic marble).'
+  - 'Class definitions are not documented: how library samples were assigned to these four labels, and what was excluded, is unknown.'
+  - 'The test set contains a bit-exact duplicate pair (test indices 24 and 28, both quartzite): 49 distinct measurements pretending to be 50, with one specimen worth 4 accuracy points and 2/9 of the quartzite class evaluation.'
+  - 'Near-duplicate pairs cross the train/test split (e.g. train 6 vs test 27 at r=0.9988, train 0 vs test 2 at r=0.9931, always same-class), so replicate leakage is plausible - a classifier can match a memorised specimen rather than generalise. Unproven, though: for near-single-mineral rocks (quartzite, marble) two distinct specimens can legitimately correlate above 0.99. An earlier draft of this record asserted each spectrum is a distinct specimen and leakage unlikely; the exact test duplicate falsifies the premise.'
+  - 'Library-inherent artifact: a high-variability band at 2.68-2.72 um (atmospheric CO2/H2O absorption in the FT-IR range) is present in the source library files, not introduced by the archive.'
+  - 'Provenance attribution caution: the three series verified bit-exact against the library are JHU-measured files (jhu.becknic), not the JPL Ward''s-collection rocks that Baldridge et al. Sec. 2-3 (quoted in layer 1) describe. If the rest of the 70 follow suit, the Ward''s narrative attaches to the wrong sub-collection and the JHU library description (speclib.jpl.nasa.gov/documents/jhu_desc) is the pertinent source; only 3/70 series have been matched so far.'
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.82
+    acc_permuted: 0.62
+    drop: 0.2
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 6.0
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.82
+    acc_raw_values: 0.42
+    acc_summary_stats: 0.42
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.4
+    gap_summary: 0.4
+    seed: 0
+    runtime_s: 3.0
+    run: '2026-09-04'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=Rock
+  - 'Baldridge, Hook, Grove, Rivera, "The ASTER spectral library version 2.0", Remote Sensing of Environment 113(4):711-715, 2009 (https://speclib.jpl.nasa.gov/downloads/2009-Baldridge.pdf, read in full)'
+  - https://speclib.jpl.nasa.gov/
+  - 'ECOSTRESS library solid-rock spectrum files (e.g. https://speclib.jpl.nasa.gov/ecospeclibdata/rock.igneous.mafic.solid.all.basalt_h1.jhu.becknic.spectrum.txt): bit-exact source of shipped series after axis reversal; headers state 2844 X values, reflectance in percent'
+  - 'JHU library description, https://speclib.jpl.nasa.gov/documents/jhu_desc (provenance of the jhu.becknic rock files)'
+  - 'Dau et al., "The UCR Time Series Archive", arXiv:1810.07758 (read in full: no mention of Rock/ASTER; documents the Fall-2018 "kept as is" normalization policy)'
+  - 'UCR BriefingDocument2018.pdf, https://www.cs.ucr.edu/~eamonn/time_series_data_2018/BriefingDocument2018.pdf (Rock appears only as an exemplar plot, p. 56; no construction rationale)'

@@ -1,0 +1,130 @@
+name: Chinatown
+archive:
+- UCR
+archive_type_tag: TRAFFIC
+n_train: 20
+n_test: 343
+series_length: 24
+n_channels: 1
+n_classes: 2
+archive_page:
+  description: "The Chinatown data problem is to predict week of the day based on the time\
+    \ series of pedestrian volumes.\n\n The City of Melbourne, Australia has developed an\
+    \ automated pedestrian counting system to better understand pedestrian activity within\
+    \ the municipality, such as how people use different city locations at different time\
+    \ of the day. The data analysis can facility decision making and urban planning for the\
+    \ future.  This data is from 10 locations for the whole year 2017.\n\n Time series are\
+    \ pedestrian count in Chinatown-Swanston St (North for 12 months of the year 2017. Classes\
+    \ are based on whether data are from a normal day or a weekend day.  \n\n Class 1: Weekend\n\
+    \ Class 2: Weekday   \n\n There is nothing to infer from the order of examples in the\
+    \ train and test set.  Data source: City of Melbourne  (Link Here)  Data edited by Hoang\
+    \ Anh Dau."
+  donated_by: H.A. Dau
+  data_source_link: http://www.pedestrian.melbourne.vic.gov.au/#date=11-06-2018&time=4
+  second_link: ''
+original_problem:
+  description: >
+    The City of Melbourne runs an automated pedestrian counting system: sensors
+    at fixed sites count people passing, and the counts are published hourly as
+    open data. The purpose is urban-planning intelligence -- understanding how
+    different city locations are used at different times of day so that
+    decisions about events, transport and public space can be informed by
+    measured footfall. There was no prediction task: the city collected counts,
+    not labels. The UCR dataset takes one sensor (Chinatown-Swanston St North)
+    for the whole of 2017 and labels each day weekend or weekday from the
+    calendar.
+  prediction_target: whether a day's pedestrian-count profile is a weekend day or a weekday
+  input_as_originally_posed: hourly pedestrian counts from a fixed street sensor
+  task_family: demand-and-load-analysis
+  stakeholder_and_use: >
+    City planners, transport and retail analysts use these footfall demand
+    curves; the weekend/weekday label itself is never unknown in practice (the
+    date is recorded), so the benchmark task is a proxy rather than an
+    operational one. task_family is `demand-and-load-analysis` because the
+    series is a demand curve for a public space -- the same object as a utility
+    load curve, with people instead of kilowatts; `device-monitoring` and
+    `activity-recognition` would both misdescribe it (no device, no individual
+    body motion).
+  source: >
+    City of Melbourne Pedestrian Counting System open data, read at
+    https://data.melbourne.vic.gov.au/explore/dataset/pedestrian-counting-system-monthly-counts-per-hour/
+    -- the system "helps to understand how people use different city locations
+    at different times of day to better inform decision-making and plan for the
+    future", and the published dataset contains "hourly pedestrian counts since
+    2009 from pedestrian sensor devices located across the city". The UCR
+    dataset was cut from the 2017 data by Hoang Anh Dau; no paper describes the
+    curation, only the archive description page.
+  provenance_confidence: medium
+translation:
+  transformation:
+  - windowing
+  what_the_x_axis_is: time
+  sampling: >
+    One calendar day per series: 24 hourly pedestrian counts, from a single
+    sensor, over the 12 months of 2017.
+  information_lost_or_added: >
+    A year-long count series from one location is cut into daily windows; the
+    surrounding week, the weather, public holidays and events are dropped even
+    though they dominate footfall. Counts are integers, non-negative, and
+    strongly bimodal in level between night and day, so the "series" is closer
+    to a short profile vector than a rich signal.
+  label_semantics_changed: >
+    yes: the weekend/weekday label is derived by the curators from each day's
+    date; the counting system produced no labels.
+benchmark_task:
+  description: >
+    Classify a 24-point hourly pedestrian-count profile from the
+    Chinatown-Swanston St (North) sensor as a weekend day or a weekday, training
+    on 20 labelled days.
+  is_same_as_original: different-task
+verdict: native-tsc
+verdict_rationale: >
+  Hourly counts are a genuine temporal signal with real sampling on a real clock;
+  the reservation is that the label is a calendar attribute imposed by the
+  curators, not a quantity the city set out to predict.
+known_issues:
+- 'n_test: shipped data files have 343 test cases (verified by download); the archive description page says 345 (2 series with missing values were dropped from the .ts release).'
+- >
+  Label derived from metadata (the date). Public holidays and event days are
+  labelled by the calendar as weekdays while behaving like weekends, so the
+  labels carry irreducible noise; the class prior is also imbalanced (about 2/7
+  weekend).
+- >
+  All 363 days come from ONE sensor in ONE year, so train and test days are
+  windows of the same underlying process (shared seasonality, shared local
+  events, shared construction/closure periods) -- train/test independence is
+  questionable.
+- >
+  20 training series against 343 test series: single-split accuracy is
+  dominated by which 20 days were drawn.
+- >
+  Chinatown is a strict subset of the same source as MelbournePedestrian (whose
+  class 7 is this very sensor), so the two datasets are not independent
+  benchmark problems.
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.9825
+    acc_permuted: 0.9825
+    drop: 0.0
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 5.4
+    run: '2026-09-03'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.9825
+    acc_raw_values: 0.2741
+    acc_summary_stats: 0.2741
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.7085
+    gap_summary: 0.7085
+    seed: 0
+    runtime_s: 2.6
+    run: '2026-09-03'
+references:
+- https://www.timeseriesclassification.com/description.php?Dataset=Chinatown
+- https://data.melbourne.vic.gov.au/explore/dataset/pedestrian-counting-system-monthly-counts-per-hour/information/
+- http://www.pedestrian.melbourne.vic.gov.au/ (archive's data_source_link; superseded by the open-data portal above)

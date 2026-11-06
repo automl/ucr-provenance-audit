@@ -1,0 +1,112 @@
+name: Adiac
+archive:
+- UCR
+archive_type_tag: IMAGE
+n_train: 390
+n_test: 391
+series_length: 176
+n_channels: 1
+n_classes: 37
+archive_page:
+  description: "The Automatic Diatom Identification and Classification (ADIAC)\nproject was\
+    \ a pilot study concerning automatic identification of\ndiatoms (unicellular algae) on\
+    \ the basis of images. The data was\ndonated by Andrei Jalba, a PhD student on the project,\
+    \ which\nfinished in the early 2000s. The outlines are extracted from\nthresholded images.\
+    \ Presumably the time series are generated as\ndistance to a reference point (the centre\
+    \ being the obvious\ncandidate). The data is very sinusoidal\n (Link Here)"
+  donated_by: A. Jalba
+  data_source_link: http://www.cs.rug.nl/~roe/adiac/adiac.html
+  second_link: http://www.cs.rug.nl/~roe/publications/seg_mrt.pdf
+original_problem:
+  description: >
+    The ADIAC project (Automatic Diatom Identification And Classification, EU
+    MAST programme, 1998-2001) set out to automate identification of diatoms
+    (unicellular algae) from light-microscope images. Diatoms are routine
+    indicators of water quality, and are also used in micropalaeontology and
+    forensics, but identifying them to species is expert, slow work. Jalba et
+    al. (2004), who built the segmentation stage of the pipeline, state the two
+    cues a diatom is identified by: "Diatoms can be identified based on (1)
+    contour shape and (2) pore patterns or striae of the shells, called
+    striation or ornamentation" (Introduction). The UCR series come from the
+    first of those two cues only.
+  prediction_target: diatom taxon (37 taxa)
+  input_as_originally_posed: >
+    8-bit greyscale brightfield light-microscope image of a diatom valve
+  task_family: image-classification
+  stakeholder_and_use: >
+    water-quality and ecological monitoring labs, diatom taxonomists,
+    micropalaeontologists and forensic scientists
+  source: >
+    Jalba, Wilkinson & Roerdink, "Automatic Segmentation of Diatom Images for
+    Classification", Microscopy Research and Technique 65:72-85, 2004 (read via
+    the Groningen repository copy) - Experimental Results: "All segmentation
+    methods described in the previous section were applied to a database of 808
+    diatom images comprising 37 different diatom taxa, each taxon (class in the
+    pattern recognition sense) having at least 20 representatives". ADIAC
+    project site (RBGE): "The overall aim of ADIAC was to develop appropriate
+    image databases and analytical methods for the automated identification of
+    diatoms for use in environmental monitoring, micropalaeontology and forensic
+    research etc."
+  provenance_confidence: high
+
+translation:
+  transformation: [contour-unrolling, resampling, z-normalization]
+  what_the_x_axis_is: arc-length
+  sampling: >
+    176 points around the valve outline extracted from thresholded images. The
+    archive page itself is not certain of the mapping: "Presumably the time
+    series are generated as distance to a reference point (the centre being the
+    obvious candidate)."
+  information_lost_or_added: >
+    Striation/ornamentation - the second of the two identification cues named by
+    Jalba et al. - is discarded completely; only the outline survives. Absolute
+    valve size, which is taxonomically informative for diatoms, is removed by
+    length normalization and z-normalization. The choice of starting point and
+    direction of the unrolling imposes a phase that has no biological meaning.
+  label_semantics_changed: "no"
+
+benchmark_task:
+  description: Classify a univariate length-176 contour series into one of 37 diatom taxa.
+  is_same_as_original: narrowed
+  # Same taxonomic labels, but only the contour cue is available and only a
+  # subset of the ADIAC image database is represented.
+
+verdict: translated-modality
+verdict_rationale: >
+  The original input is a microscope image and the released series is its outline
+  re-parameterized by arc-length, so the ordering is spatial, not temporal.
+known_issues:
+  - Archive page is explicitly unsure how the series were produced ("Presumably the time series are generated as distance to a reference point"), so the exact transformation is unverified.
+  - 37 classes with roughly 10 training examples each (390 train); accuracy estimates are noisy.
+  - z-normalization removes valve size, which is a real taxonomic signal for diatoms.
+  - Rotation/starting-point of the contour unrolling is an unstated free parameter; phase alignment is not guaranteed across instances.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.8159
+    acc_permuted: 0.6905
+    drop: 0.1253
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 5.3
+    run: '2026-09-03'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.8159
+    acc_raw_values: 0.6547
+    acc_summary_stats: 0.6522
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.1611
+    gap_summary: 0.1637
+    seed: 0
+    runtime_s: 8.6
+    run: '2026-09-03'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=Adiac
+  - Jalba, Wilkinson & Roerdink, "Automatic Segmentation of Diatom Images for Classification", Microsc. Res. Tech. 65:72-85, 2004 - https://pure.rug.nl/ws/files/2976743/2004MicroscResTechJalba.pdf
+  - ADIAC project pages, Royal Botanic Garden Edinburgh - https://websites.rbge.org.uk/ADIAC/adiac.html
+  - Dau et al., "The UCR Time Series Archive", arXiv:1810.07758

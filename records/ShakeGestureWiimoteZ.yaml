@@ -1,0 +1,143 @@
+name: ShakeGestureWiimoteZ
+archive:
+- UCR
+archive_type_tag: HAR
+n_train: 50
+n_test: 50
+series_length: variable
+n_channels: 1
+n_classes: 10
+archive_page:
+  description: The original data include 10 subjects, each perform 10 gestures 10 times. The
+    gesture acquisition device is a Nintendo Wiimote remote controller with built-in three-axis
+    accelerometer. Time series are of different lengths. There are no missing values. Each
+    time series in text file is padded with NaN to the length of the longest time series in
+    the dataset. ARFF files are padded with missing number symbol (the symbol ?)   Data is
+    acceleration in z-axis dimension. Each subject performs "shake" gesture multiple times.
+    Classes are based on subject. This is a variable length problem. Note that data are shuffled
+    and randomly sampled so that instances across datasets do not sychronized by dimension
+    or subject.  Data created by Guna Jože et al. (see [1]). Data edited by Hoang Anh Dau.  [1]
+    Guna, Joze, Iztok Humar, and Matevz Pogacnik. "Intuitive gesture based user identification
+    system." Telecommunications and Signal Processing (TSP), 2012 35th International Conference
+    on. IEEE, 2012.
+  donated_by: J. Guna
+  data_source_link: ''
+  second_link: ''
+original_problem:
+  description: >
+    Guna, Humar and Pogacnik proposed identifying a user from the way they handle a
+    control device: a person picks up a Nintendo Wii remote from rest, and the
+    three-axis accelerometer trace of that everyday movement is matched (with DTW)
+    against enrolled templates to log the user in. Ten subjects each performed ten
+    gestures ten times (archive description page). This data set keeps the "shake"
+    gesture only and its classes are the ten subjects, so unlike the
+    AllGestureWiimote* data sets it preserves the source study's own task.
+  prediction_target: >
+    which of ten enrolled subjects performed the shake gesture (biometric
+    identification)
+  input_as_originally_posed: >
+    three-axis acceleration from a hand-held Nintendo Wii remote during a single
+    natural handling gesture
+  task_family: biometric-identification
+  # No enum value covers "identify the person from body-worn motion". The modality is
+  # that of activity-recognition, but the prediction target is subject identity, i.e.
+  # behavioural biometrics. Reported to the orchestrator as a vocabulary gap
+  # (suggested value: biometric-identification).
+  stakeholder_and_use: >
+    implicit/low-friction user login for non-critical applications such as
+    multimedia services (the source study's stated use case)
+  source: >
+    Guna, Humar, Pogacnik, "Intuitive gesture based user identification system",
+    35th Int. Conf. on Telecommunications and Signal Processing (TSP), IEEE 2012.
+    Full text NOT READ - the paper is closed access (OpenAlex reports
+    oa_status "closed", no repository copy). I read its abstract in full via the
+    OpenAlex API: "We present an intuitive and very easy to use implicit gesture
+    based identification system that is especially suited for security-wise
+    non-critical applications, such as the user login in the multimedia services.
+    The term 'implicit gesture' in our work refers to a natural physical hand
+    manipulation performed by the user who takes hold of the control device and
+    simply picks it up from its neutral motionless position - a 'pick-up'
+    gesture... 100% recognition accuracy was achieved when using explicit
+    identification signature gestures and over 91% recognition accuracy was
+    achieved when using the implicit 'pick-up' gesture."
+  provenance_confidence: medium
+translation:
+  transformation: [channel-selection]
+  what_the_x_axis_is: time
+  sampling: >
+    Wii remote built-in three-axis accelerometer; only the z-axis is released, at
+    the natural variable length of each gesture. The archive pads each series with
+    NaN (text) or "?" (ARFF) to the length of the longest series. Sampling rate is
+    not documented on the archive page.
+  information_lost_or_added: >
+    Two of three axes dropped; the other nine gestures each subject performed are
+    split off into other data sets, and the archive states that "data are shuffled
+    and randomly sampled so that instances across datasets do not sychronized by
+    dimension or subject", so the per-subject multi-gesture structure that the
+    source system actually used is not recoverable.
+  label_semantics_changed: "no"
+benchmark_task:
+  description: >
+    Given a variable-length z-axis acceleration trace of one shake gesture,
+    decide which of ten people produced it.
+  is_same_as_original: narrowed
+verdict: native-tsc
+verdict_rationale: >
+  Genuine hand-held accelerometer recordings on a time axis, with the source study's
+  own identification labels; only one axis was selected and the series NaN-padded.
+known_issues:
+  - >
+    Very small: 50 train / 50 test over 10 classes, i.e. five training examples per
+    subject. Baseline error rates in the archive's DataSummary.csv (0.44 for 1-NN ED,
+    0.34 constrained DTW here) sit far from the 0.90 default rate but leave wide
+    confidence intervals on 50 test cases.
+  - >
+    Because the label *is* the subject, everything that distinguishes subjects -
+    device grip, session, posture - is legitimately in scope, but so is any
+    recording-order or session artifact; there is no held-out-session evaluation to
+    separate a stable biometric from a session fingerprint.
+  - >
+    Variable length, NaN-padded to the longest series (UCR briefing Sec. VI-C-2,
+    p. 9: "we pad enough NaNs to the end of each time series... We deliberately
+    refrain from offering any advice on how to best do this"), so the padding
+    convention is part of the benchmark.
+  - >
+    Shares raw material with ShakeGestureWiimoteZ, PickupGestureWiimoteZ and
+    AllGestureWiimoteX/Y/Z (all from the same 10x10x10 collection); results across
+    these five data sets are not independent.
+  - >
+    Primary source closed access (abstract only) - provenance_confidence capped at
+    medium; a human with IEEE access should confirm the sampling rate and the exact
+    subject-to-class mapping.
+  - >
+    task_family is "other" for lack of a biometric-identification value in the
+    controlled vocabulary; the archive's own type tag is "Sensor" in
+    DataSummary.csv against HAR on the site's aggregate table.
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.92
+    acc_permuted: 0.82
+    drop: 0.1
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 5.3
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.92
+    acc_raw_values: 0.62
+    acc_summary_stats: 0.6
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.3
+    gap_summary: 0.32
+    seed: 0
+    runtime_s: 3.1
+    run: '2026-09-04'
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=ShakeGestureWiimoteZ
+  - Guna, Humar, Pogacnik, "Intuitive gesture based user identification system", TSP 2012 - closed access, abstract read via https://api.openalex.org/works?search=Intuitive+gesture+based+user+identification+system
+  - Dau, Bagnall, Kamgar, Yeh, Zhu, Gharghabi, Ratanamahatana, Keogh, "The UCR Time Series Archive", arXiv:1810.07758 (PDF read)
+  - UCR archive DataSummary.csv (baseline error rates and archive type tags), cached at scripts/sources/ucr_DataSummary.csv

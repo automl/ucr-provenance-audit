@@ -1,0 +1,134 @@
+name: MelbournePedestrian
+archive:
+- UCR
+archive_type_tag: TRAFFIC
+n_train: 1194
+n_test: 2439
+series_length: 24
+n_channels: 1
+n_classes: 10
+archive_page:
+  description: '# PedestrianCountingSystem dataset  The City of Melbourne, Australia has developed
+    an automated pedestrian counting system to better understand pedestrian activity within
+    the municipality, such as how people use different city locations at different time of
+    the day. The data analysis can facility decision making and urban planning for the future.  We
+    extract data of 10 locations for the whole year 2017. We make two datasets from these
+    data.  ## MelbournePedestrian  Data are pedestrian count for 12 months of the year 2017.
+    Classes correspond location of sensor placement.  - Class 1: Bourke Street Mall (North)
+    - Class 2: Southern Cross Station - Class 3: New Quay - Class 4: Flinders St Station Underpass
+    - Class 5: QV Market-Elizabeth (West) - Class 6: Convention/Exhibition Centre - Class
+    7: Chinatown-Swanston St (North) - Class 8: Webb Bridge - Class 9: Tin Alley-Swanston
+    St (West) - Class 10: Southbank    There is nothing to infer from the order of examples
+    in the train and test set.  Data source: City of Melbourne (see [1]). Data edited by Hoang
+    Anh Dau.  [1]  (Link Here)'
+  donated_by: H.A. Dau
+  data_source_link: http://www.pedestrian.melbourne.vic.gov.au/#date=11-06-2018&time=4
+  second_link: ''
+original_problem:
+  description: >
+    The City of Melbourne runs an automated pedestrian counting system: sensors
+    at fixed sites count people passing and the counts are published hourly as
+    open data, so that the city can understand how different locations are used
+    at different times of day and plan accordingly. The city posed no prediction
+    problem. The UCR dataset takes 10 sensor locations for the whole of 2017,
+    cuts them into single days, and makes the LOCATION of the sensor the class
+    label -- turning a measurement programme into a site-identification task.
+  prediction_target: >
+    which of 10 Melbourne sensor locations recorded the day's counts (Bourke
+    Street Mall, Southern Cross Station, New Quay, Flinders St Station Underpass,
+    QV Market, Convention/Exhibition Centre, Chinatown-Swanston St, Webb Bridge,
+    Tin Alley-Swanston St, Southbank)
+  input_as_originally_posed: hourly pedestrian counts from a fixed street sensor
+  task_family: demand-and-load-analysis
+  stakeholder_and_use: >
+    The counts serve city planners and transport analysts; identifying which
+    sensor a trace came from has no stakeholder at all, because the sensor id is
+    part of every record the city publishes. task_family is
+    `demand-and-load-analysis` on the basis of the underlying signal -- a
+    footfall demand curve for a public place, the pedestrian analogue of a
+    utility load curve. (Strictly, the benchmark task is place fingerprinting;
+    no enum value covers that, and choosing the signal's family rather than
+    inventing one keeps the vocabulary closed.)
+  source: >
+    City of Melbourne Pedestrian Counting System open data, read at
+    https://data.melbourne.vic.gov.au/explore/dataset/pedestrian-counting-system-monthly-counts-per-hour/
+    -- the system "helps to understand how people use different city locations
+    at different times of day to better inform decision-making and plan for the
+    future", and the published dataset contains "hourly pedestrian counts since
+    2009 from pedestrian sensor devices located across the city". The UCR
+    dataset was cut from the 2017 data by Hoang Anh Dau; no paper describes the
+    curation, only the archive description page.
+  provenance_confidence: medium
+translation:
+  transformation:
+  - windowing
+  what_the_x_axis_is: time
+  sampling: >
+    One calendar day per series: 24 hourly pedestrian counts; 10 locations x
+    ~365 days of 2017, split 1194 train / 2439 test.
+  information_lost_or_added: >
+    Year-long count series from 10 locations are cut into daily windows, so each
+    class is a single physical sensor observed on many days. Weather, holidays,
+    events and the identity of the day of week are all dropped, while the
+    location's characteristic level and shape (station rush peaks vs market
+    midday peak) are preserved -- which is exactly what the label then rewards.
+  label_semantics_changed: >
+    yes: the label is the sensor's location identity, taken from the data
+    portal's metadata by the curators. The original data have no classes; the
+    counting system's purpose was to quantify pedestrian activity, not to
+    recognise places.
+benchmark_task:
+  description: >
+    Given a 24-point hourly pedestrian-count profile, identify which of 10
+    Melbourne sensor locations produced it.
+  is_same_as_original: different-task
+verdict: native-tsc
+verdict_rationale: >
+  The input is a genuine hourly time series from a real sensor, so the modality
+  is native TSC; but the label is site identity assigned from metadata, which
+  makes the benchmark a different problem from the measurement programme that
+  produced the data.
+known_issues:
+- 'Missing values: nominally 24 hourly counts per day (site and UCR agree), but some series load shorter once missing values are stripped (verified with aeon).'
+- >
+  The label is location identity and each class is ONE physical sensor, so every
+  training and test example of a class shares that sensor's fixed
+  characteristics (baseline footfall level, peak times, any sensor bias). This
+  is an identity-shortcut task by construction: the model learns "which place",
+  which is information the data owner always already has.
+- >
+  Days within a class come from the same 2017 calendar year and the same site,
+  so train and test series share seasonality, events and construction periods;
+  train/test independence is questionable, and no chronological split is used.
+- >
+  Labels derived from metadata rather than measured ground truth.
+- >
+  Class 7 (Chinatown-Swanston St North) is the same sensor and year as the whole
+  Chinatown dataset; the two archive entries are not independent problems.
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.9668
+    acc_permuted: 0.9526
+    drop: 0.0142
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 9.0
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.9668
+    acc_raw_values: 0.9642
+    acc_summary_stats: 0.9069
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.0026
+    gap_summary: 0.0599
+    seed: 0
+    runtime_s: 6.2
+    run: '2026-09-04'
+references:
+- https://www.timeseriesclassification.com/description.php?Dataset=MelbournePedestrian
+- https://data.melbourne.vic.gov.au/explore/dataset/pedestrian-counting-system-monthly-counts-per-hour/information/
+- http://www.pedestrian.melbourne.vic.gov.au/ (archive's data_source_link; superseded by the open-data portal above)

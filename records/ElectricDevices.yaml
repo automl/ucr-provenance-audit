@@ -1,0 +1,139 @@
+name: ElectricDevices
+archive:
+- UCR
+archive_type_tag: Device
+n_train: 8926
+n_test: 7711
+series_length: 96
+n_channels: 1
+n_classes: 7
+
+original_problem:
+  description: >
+    Classification of household devices from their electricity use, posed by
+    Lines et al. (IDEAL 2011) on data from the Visual Energy Trial (VET) of the
+    smart-meter company Green Energy Options (GEO). IDEAL 2011, Sec. 1: "Their
+    monitoring devices were installed in 187 homes across East Anglia and the
+    usage of individual devices and total household power consumption was
+    recorded at 15 minute intervals for approximately a year in each
+    household." Lines' thesis (Sec. 3.2.1, p.40): "The objective of these
+    problems is to identify the class of a device for a new user without any
+    previous labelled consumption." The ten most common device types were
+    coarsened by the source authors: "we group those devices into two new
+    classes: cold and screen" (thesis p.40), giving seven classes, kettle,
+    immersion heater, washing machine, cold group, oven/cooker, screen group
+    and dishwasher (Bagnall et al., SDM 2012, Sec. 3.4, whose Table 1 lists
+    "ElectricDevices 8953 7745 96 7"). This is not the Household Electricity
+    Survey ("Powering the Nation", 251 households, 2-minute readings), which is
+    the source of the five Household Electricity Survey device datasets
+    (Computers, LargeKitchenAppliances, RefrigerationDevices, ScreenType,
+    SmallKitchenAppliances; thesis Sec. 3.2.2); ElectricDevices shares no
+    recordings with them.
+  prediction_target: device class (7 groups; fridge, freezer and fridge/freezer merged into "cold", computer and television into "screen")
+  input_as_originally_posed: electricity consumption of one separately metered device, summed over 15-minute intervals (Wh)
+  task_family: device-monitoring
+  stakeholder_and_use: >
+    GEO and its smart-meter users: automatic device recognition to give
+    consumers feedback on their consumption (IDEAL 2011, Sec. 1).
+  source: >
+    Lines, Bagnall, Caiger-Smith & Anderson, "Classification of household
+    devices by electricity usage profiles", IDEAL 2011, LNCS 6936, pp.403-412;
+    Bagnall, Davis, Hills & Lines, "Transformation Based Ensembles for Time
+    Series Classification", SIAM SDM 2012, Sec. 3.4 and Table 1; J. Lines, PhD
+    thesis, University of East Anglia, 2015, Sec. 3.2.1. Donated by A. Bagnall
+    and J. Lines.
+  provenance_confidence: high
+  # High for the original problem (creators' papers and thesis). Not resolved:
+  # how the current files relate to the 2012 release, who normalized them, and
+  # which numeric label is which device group.
+
+translation:
+  transformation: [windowing, z-normalization]
+  what_the_x_axis_is: time
+  sampling: >
+    96 consecutive 15-minute consumption totals, one day per series; 96 x 15
+    min = 24 h is the source's native resolution (IDEAL 2011 Sec. 1; SDM 2012
+    Sec. 3.4). No source describes a resampling step.
+  information_lost_or_added: >
+    The source notes that summing over 15 minutes hides short events (a kettle
+    "will only be on for two or three minutes", SDM 2012 Sec. 3.4). SDM 2012
+    says "The data have not been normalised"; every shipped series is
+    z-normalized (measured: max |mean| 3.3e-8, variance within 7.2e-8 of 1),
+    removing absolute consumption level. Who normalized the data and when is
+    undocumented.
+  label_semantics_changed: "no"
+  # The 10-to-7 grouping was made by the source study itself, before the data
+  # reached the archive.
+
+benchmark_task:
+  description: Classify a z-normalized 96-point daily consumption profile of one device into one of 7 device groups.
+  is_same_as_original: "yes"
+  # The source authors posed this exact seven-class daily task (SDM 2012
+  # Sec. 3.4, Table 1).
+
+verdict: native-tsc
+verdict_rationale: >
+  Physical consumption measured over a day on a time axis, with a
+  device-classification task posed by the source study itself.
+known_issues:
+  - >
+    Exact duplicates (measured 2026-11-01): 16160 unique series out of 16637;
+    208 of 7711 test series (2.7%) are value-identical to a training series;
+    54 duplicate groups mix labels across both files, 41 of them spanning train
+    and test. 207 of the 208 matching test series take only two distinct
+    values. Inference: consistent with on/off days that become identical after
+    z-normalization, not proof of shared households.
+  - >
+    The source split kept households apart: thesis p.40, "keep data from a
+    specific household exclusive to either the training data, or the testing
+    data"; IDEAL 2011 Sec. 4, "no single household appears in both the training
+    and testing fold"; SDM 2012 Sec. 4.1 names ElectricDevices as a dataset
+    where replacing the supplied split "would introduce bias". SDM 2012 Table 1
+    gives 8953 train / 7745 test; the shipped files have 8926 / 7711. The
+    sources do not explain the difference or give a case-level
+    correspondence, so whether the shipped split keeps households apart is
+    unverified.
+  - >
+    The archive's description text (the HES "Powering the Nation" study, 251
+    households, "Each series is length 720 (24 hours of readings taken every 2
+    minutes)") contradicts its own length-96 identity table, the shipped files
+    and the source papers. Inference: the archive conflates ElectricDevices
+    with the HES device datasets.
+  - >
+    Source-text inconsistency: the thesis says "All monitoring devices sampled
+    data in 25 minute intervals" (p.39), while its Table 3.2 and Figure 3.1
+    captions and the IDEAL and SDM papers say 15 minutes. Inference: "25" is an
+    error.
+  - Which numeric label (1-7) is which device group is not documented in any consulted source.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.7417
+    acc_permuted: 0.6601
+    drop: 0.0816
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 56.0
+    run: '2026-09-03'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.7417
+    acc_raw_values: 0.6833
+    acc_summary_stats: 0.5611
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.0584
+    gap_summary: 0.1805
+    seed: 0
+    runtime_s: 6.9
+    run: '2026-09-03'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=ElectricDevices
+  - https://timeseriesclassification.com/aeon-toolkit/ElectricDevices.zip (shipped description and train/test files)
+  - Lines et al. (2011), "Classification of household devices by electricity usage profiles", IDEAL 2011, LNCS 6936, pp.403-412, doi 10.1007/978-3-642-23878-9_48
+  - Bagnall et al. (2012), "Transformation Based Ensembles for Time Series Classification", SIAM SDM 2012, Sec. 3.4, Sec. 4.1, Table 1 (UEA eprint 38898)
+  - Lines (2015), "Time Series Classification through Transformation and Ensembles", PhD thesis, University of East Anglia, Sec. 3.2.1-3.2.2 (UEA eprint 53360)
+  - Household Electricity Survey / Intertek final report (2012) - consulted only to show it is not this dataset's source

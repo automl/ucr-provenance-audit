@@ -1,0 +1,170 @@
+name: Worms
+archive:
+- UCR
+archive_type_tag: MOTION
+n_train: 181
+n_test: 77
+series_length: 900
+n_channels: 1
+n_classes: 5
+archive_page:
+  description: "Caenorhabditis elegans   is a roundworm commonly\r\nused as a model organism\
+    \ in the study of genetics. The movement of\r\nthese worms is known to be a useful indicator\
+    \ for understanding\r\nbehavioural genetics. Brown {em et al.} \"A dictionary of behavioral\
+    \ motifs reveals clusters of\ngenes affecting   Caenorhabditis elegans   locomotion\"\
+    \ describe a system for recording the motion of worms on an agar\r\nplate and measuring\
+    \ a range of human-defined\r features. It has been shown that the\r\nspace of shapes \
+    \  Caenorhabditis elegans  adopts on an agar\r\nplate can be represented by combinations\
+    \ of four base shapes, or\r\neigenworms. Once the worm outline is extracted, each frame\r\
+    \nof worm motion can be captured by four scalars representing the\r\namplitudes along\
+    \ each dimension when the shape is projected onto\r\nthe four eigenworms. \nThe data relates\
+    \ to 258 traces of worms converted into four\r\n\"eigenworm\" series. The eigenworm data\
+    \ are lengths from 17984 to\r\n100674 (sampled at 30 Hz, so from 10 minutes to 1 hour)\
+    \ and in four\r\ndimensions (eigwnworm 1 to 4). There are five\r\nclasses:N2,goa-1,unc-1,unc-38\
+    \ and un63. N2 is wildtype (i.e.\r\nnormal) the other 4 are mutant strains.\r These datasets\
+    \ are the first dimension only (first eigenworm)\n\r\nThe problems Worms.arff and WormsTwoClass.arff\
+    \ are series of first\r\neigenworm1 averaged down so that all series are lengths 900 (the\r\
+    \nsingle hour long series is discarded). This smoothing is likely to\r\ndiscard discriminatory\
+    \ information. The Yemini features obtains\r\nnearly 100% accuracy, although we have not\
+    \ independently verified\r\nthis. \r\n\r\n\r\nwe address the problem of classifying individual\
+    \ worms as wild-type\r\nor mutant based on the time series of the first eigenworm,\r\n\
+    down-sampled to second-long intervals. We have 257 cases, which we\r\nsplit 70%/30% into\
+    \ a train and test set. Each series has 900\r\nobservations, and each worm is classified\
+    \ as either wild-type (the\r\nN2 reference strain - 109 cases) or one of four mutant types:\
+    \ goa-1\r\n(44 cases); unc-1 (35 cases); unc-38 (45 cases) and unc-63 (25\r\ncases). The\
+    \ data were extracted from the {em C. elegans}\r\nbehavioural database~cite{wormWeb}.\
+    \ The formatted classification\r\nproblems are available from the website associated with\
+    \ this\r\npaper~cite{tscWeb}."
+  donated_by: Andre Brown, A. Bagnall
+  data_source_link: http://wormbehavior.mrc-lmb.cam.ac.uk/
+  second_link: ''
+original_problem:
+  description: >
+    Behavioural genetics in the nematode Caenorhabditis elegans. Worm locomotion is a
+    standard readout for gene function: mutants move differently from wild type, so
+    quantifying movement is a way to phenotype genes. Brown, Yemini, Grundy, Jucikas &
+    Schafer recorded worms crawling on an agar plate with a tracking microscope, and
+    established that the worm's outline at any instant is well described by four base
+    shapes: from the abstract, "we show that four basic shapes, or eigenworms,
+    previously described for wild-type worms, also capture mutant shapes, and that this
+    representation can be used to build a dictionary of repetitive behavioral motifs in
+    an unbiased way." Their aim was an unbiased motif dictionary rather than a
+    supervised classifier; the classification framing was added by Bagnall and
+    colleagues when they formatted the traces for the archive.
+  prediction_target: worm strain - N2 (wild type) or one of the mutants goa-1, unc-1, unc-38, unc-63
+  input_as_originally_posed: video of a single worm crawling on an agar plate, tracked at 30 frames per second
+  task_family: animal-behaviour
+  # `other` = animal behavioural phenotyping / behavioural genetics. The subject is
+  # not human, so `activity-recognition` does not apply as defined; the label is a
+  # genotype, not a clinical diagnosis. Reported as a vocabulary gap.
+  stakeholder_and_use: >
+    Geneticists and neurobiologists using C. elegans as a model organism, who need
+    high-throughput behavioural phenotyping to link genes to behaviour.
+  source: >
+    Brown AE, Yemini EI, Grundy LJ, Jucikas T, Schafer WR, "A dictionary of behavioral
+    motifs reveals clusters of genes affecting Caenorhabditis elegans locomotion",
+    PNAS 110(2):791-796, 2013. Only the abstract was reached (the PNAS full text
+    returned HTTP 403 and PubMed/EuropePMC did not render); the quoted sentence above
+    is from that abstract. The C. elegans behavioural database
+    (http://wormbehavior.mrc-lmb.cam.ac.uk/) is named by the archive page as the
+    source of the traces, and the archive page reproduces the formatting description
+    from Bagnall et al.'s bake-off paper.
+  provenance_confidence: medium
+  # The origin, the eigenworm representation and the archive's own preprocessing are
+  # all documented on the archive page and consistent with the PNAS abstract, but the
+  # PNAS methods (frame rate, strain counts, tracking details) were not read directly.
+
+translation:
+  transformation: [channel-selection, resampling, z-normalization]
+  what_the_x_axis_is: time
+  sampling: >
+    Video at 30 Hz. Each frame's worm outline is projected onto four eigenworms,
+    giving four scalar amplitude series per trace; raw traces run 17,984 to 100,674
+    frames (10 minutes to 1 hour). The archive keeps only eigenworm 1 and, per the
+    archive page, the series are "averaged down so that all series are lengths 900" -
+    i.e. down-sampled to roughly one-second intervals, 15 minutes of behaviour.
+  information_lost_or_added: >
+    Two reductions, both large. (1) Shape: each video frame's full worm outline is
+    collapsed to a single scalar, the amplitude along the first eigenworm - three of
+    the four shape dimensions are discarded, so postures that differ in eigenworms 2-4
+    are indistinguishable here. Note this is a per-frame feature extraction, not a
+    re-parameterisation of the axis: the resulting sequence is still indexed by real
+    time. (2) Time: 30 Hz is averaged down to 1 Hz, which removes the fast body-wave
+    oscillation that carries much of the locomotion phenotype. The archive page
+    concedes the point: "This smoothing is likely to discard discriminatory
+    information."
+  label_semantics_changed: >
+    yes: the source study produced an unsupervised motif dictionary; the archive turns the strain metadata of each recorded worm into a supervised 5-way class label.
+
+benchmark_task:
+  description: >
+    Classify a length-900 first-eigenworm amplitude series (one worm, ~15 minutes of
+    crawling at 1 Hz) into one of five strains. 181 train / 77 test.
+  is_same_as_original: narrowed
+
+verdict: native-tsc
+verdict_rationale: >
+  Despite the eigenworm projection, each series is a sequence of shape amplitudes
+  indexed by real time at a fixed rate - a genuine temporal signal of the worm's
+  motion - so the x-axis is time and the modality is native.
+known_issues:
+  - >
+    The eigenworm projection plus down-sampling from 30 Hz to 1 Hz is heavy,
+    acknowledged information loss: "This smoothing is likely to discard discriminatory
+    information" (archive page). Only 1 of 4 eigenworm dimensions is retained. The
+    honest multivariate form of this problem is the UEA EigenWorms dataset.
+  - >
+    The archive page reports that domain-standard hand-crafted features (the Yemini
+    feature set) reach "nearly 100% accuracy, although we have not independently
+    verified this", while TSC methods on this reduced univariate series do far worse.
+    A high error rate here reflects the archive's preprocessing, not the difficulty
+    of the biological problem.
+  - >
+    Worms and WormsTwoClass are the SAME 258 (or 257 - the archive page gives both
+    numbers) traces with the same 181/77 split; WormsTwoClass merely collapses the
+    four mutant strains into one class. They are not independent datasets and should
+    not both count in an archive-wide average.
+  - >
+    Dau et al., "The UCR Time Series Archive" (arXiv:1810.07758), Table I, p. 9, lists
+    Worms and WormsTwoClass among fourteen datasets whose train/test split was
+    REVERSED for the 2018 archive expansion. Results published before and after that
+    change are not comparable, and any figure quoted for this dataset must state which
+    split version it used.
+  - >
+    Strong class imbalance: N2 wild type has 109 cases against goa-1 (44), unc-1 (35),
+    unc-38 (45) and unc-63 (25).
+  - >
+    Recording batch is a possible confound that cannot be checked: no plate, date or
+    batch identifier ships with the archive version, so it is not possible to rule out
+    that a strain is identifiable from recording conditions rather than from motion.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.7403
+    acc_permuted: 0.5844
+    drop: 0.1558
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 5.9
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.7403
+    acc_raw_values: 0.5325
+    acc_summary_stats: 0.5584
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.2078
+    gap_summary: 0.1818
+    seed: 0
+    runtime_s: 4.2
+    run: '2026-09-04'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=Worms
+  - https://www.timeseriesclassification.com/description.php?Dataset=WormsTwoClass
+  - Brown AE, Yemini EI, Grundy LJ, Jucikas T, Schafer WR (2013), "A dictionary of behavioral motifs reveals clusters of genes affecting Caenorhabditis elegans locomotion", PNAS 110(2):791-796 (abstract only; full text returned HTTP 403)
+  - http://wormbehavior.mrc-lmb.cam.ac.uk/
+  - Dau et al., "The UCR Time Series Archive", arXiv:1810.07758 (Table I, p. 9; Sec. III-C, p. 3)

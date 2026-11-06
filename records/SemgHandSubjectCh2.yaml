@@ -1,0 +1,145 @@
+name: SemgHandSubjectCh2
+archive:
+- UCR
+archive_type_tag: SPECTRO
+n_train: 450
+n_test: 450
+series_length: 1500
+n_channels: 1
+n_classes: 5
+archive_page:
+  description: 'The data are surface electromyography (sEMG) signal, which captures electric
+    activity of groups of muscle at rest or during activity. Data collection involves five
+    healthy subjects conducting six movements of hand grasps. Collection device is Delsys''
+    2-channel EMG system.  We extract the power spectrum from the raw data to make three datasets.  ##
+    SemgHandSubjectCh2  We use data of channel 2 only. Classes correspond to subjects.  -
+    Class 1: Female 1 - Class 2: Female 2 - Class 3: Female 3 - Class 4: Male 1 - Class 5:
+    Male 2  ## SemgHandMovementCh2  We use data of channel 2 only. Classes correspond to movements
+    of hand grasps.  - Class 1: Cylindrical - Class 2: Hook - Class 3: Tip - Class 4: Palmar
+    - Class 5: Spherical - Class 6: Lateral  ## SemgHandGenderCh2  We use data of channel
+    2 only. Classes correspond to gender.  - Class 1: Female - Class 2: Male  There is nothing
+    to infer from the order of examples in the train and test set.  Data created by Sapsanis,
+    Christos, et al. (see [1], [2]. Data edited by Chin-Chia Michael Yeh.  [1] Sapsanis, Christos,
+    et al. "Improving EMG based classification of basic hand movements using EMD." Engineering
+    in Medicine and Biology Society (EMBC), 2013 35th Annual International Conference of the
+    IEEE. IEEE, 2013.  [2] “UCI Machine Learning Repository: SEMG for Basic Hand Movements
+    Data Set.” UCI Machine Learning Repository, URL archive.ics.uci.edu/ml/datasets/sEMG+for+Basic+Hand+movements.'
+  donated_by: C. Yeh
+  data_source_link: ''
+  second_link: ''
+original_problem:
+  description: >
+    Surface electromyography for hand-grasp recognition. Sapsanis et al.
+    recorded sEMG from the forearms of five healthy subjects while they
+    performed six everyday grasps, in order to build a pattern-recognition
+    system that identifies the intended grasp from muscle activity - the
+    standard route to myoelectric control of a prosthetic or assistive hand.
+    UCI Machine Learning Repository, "sEMG for Basic Hand movements": "The data
+    were collected at a sampling rate of 500 Hz ... The signals were band-pass
+    filtered using a Butterworth Band Pass filter with low and high cutoff at
+    15Hz and 500Hz respectively and a notch filter at 50Hz to eliminate line
+    interference artifacts. ... The signal was taken from two Differential EMG
+    Sensors and the signals were transmitted to a 2-channel EMG system by
+    Delsys Bagnoli(TM) Handheld EMG Systems"; "There were two forearm surface
+    EMG electrodes Flexor Capri Ulnaris and Extensor Capri Radialis, Longus and
+    Brevis) held in place by elastic bands and the reference electrode in the
+    middle, in order to gather information about the muscle activation"; the
+    first database comprises "5 healthy subjects (two males and three females)
+    of the same age approximately (20 to 22-year-old)" performing each of the
+    six grasps 30 times, 6 seconds per repetition. 5 subjects x 6 grasps x 30
+    repetitions = the 900 series the archive ships.
+    This dataset does not ask the question the data were collected to answer:
+    the archive curator relabelled the same 900 recordings with the identity of
+    the subject who produced them.
+  prediction_target: which of the five subjects produced the recording (curator-derived label)
+  input_as_originally_posed: surface EMG recording from two forearm electrodes during a hand grasp
+  task_family: biometric-identification
+  # The task_family describes the ORIGINAL problem (grasp recognition from
+  # body-worn sensors), not the curator's relabelling to subject identity.
+  stakeholder_and_use: >
+    prosthetics and assistive-device researchers building myoelectric grasp
+    control; rehabilitation and HCI groups
+  source: >
+    Sapsanis, Georgoulas, Tzes, Lymberopoulos, "Improving EMG based
+    classification of basic hand movements using EMD", IEEE EMBC 2013 - NOT
+    read (IEEE Xplore, paywalled); only its title and the archive's citation of
+    it. The recording protocol above is quoted from the UCI Machine Learning
+    Repository page for the dataset, which was read. The archive's own
+    processing step ("We extract the power spectrum from the raw data") is
+    stated on the timeseriesclassification.com page and in the README shipped
+    inside the dataset zip, but is documented nowhere in more detail.
+  provenance_confidence: medium
+
+translation:
+  transformation: [channel-selection, spectrum-as-series]
+  what_the_x_axis_is: frequency
+  # Frequency in Hz - see known_issues for the bin/range arithmetic.
+  sampling: >
+    The raw recording is 6 s at 500 Hz from forearm surface electrodes
+    (3000 samples). The archive curator kept channel 2 only and replaced each
+    recording with its power spectrum: 1500 bins covering roughly 0-250 Hz at
+    about 1/6 Hz per bin. Verified against the shipped data - the values are
+    strictly non-negative, have low lag-1 autocorrelation (0.24-0.46), and the
+    class-averaged profile rises to a broad maximum around bins 250-350 and
+    decays, which is the classic sEMG power distribution peaking near 50-80 Hz.
+  information_lost_or_added: >
+    The Fourier transform discards all phase and all temporal structure: burst
+    onset, contraction timing, the ramp of the grasp, and every relation
+    between the two forearm channels (only one is kept). What remains is an
+    order-free energy-by-frequency profile - the archive did the feature
+    extraction that an EMG practitioner would have done, and then presented the
+    features as a "time series". A TSC model here is modelling a spectrum's
+    shape, not a muscle's dynamics.
+  label_semantics_changed: "yes: the grasp condition the experimenters manipulated is discarded and
+    replaced by subject identity, a metadata field of the recording session.
+    Nobody posed subject identification as a problem in the source study."
+
+benchmark_task:
+  description: Classify a univariate length-1500 sEMG power spectrum by which of five subjects produced it.
+  is_same_as_original: different-task
+
+verdict: ordered-not-temporal
+verdict_rationale: >
+  The labels are curator-derived subject identity rather than the original
+  grasp task, and the released series is a Fourier power spectrum indexed by
+  frequency rather than the temporal sEMG signal that was recorded.
+known_issues:
+  - 'Curator-derived labels. Biometric identification from sEMG is a real research question, but nobody posed it here: the label is the session metadata, and the 900 recordings were made in a single session per subject.'
+  - 'Because each subject was recorded once, "subject" and "recording session" are the same variable. Anything session-specific - electrode placement, skin impedance, mains coupling, amplifier gain - is a legitimate cue for the classifier and a fatal confound for the stated task. High accuracy here is close to uninformative.'
+  - 'Perfectly balanced by construction (90 train and 90 test series per subject), because the split is a stratified shuffle of one session, not an independent re-recording.'
+  - 'Mis-tagged as SPECTRO in the archive, and the tag is misleading in both directions. The recording is surface electromyography - a genuine electrical signal in time - so this is not spectroscopy and belongs nowhere near the food-chemometrics Spectro cluster (Coffee, Beef, Meat, OliveOil, Strawberry, Wine). But it is also not a raw sEMG time series: the archive curator replaced each 6-second recording with its Fourier power spectrum, so the released series is not temporal either. Both the tag and the naive reading of the tag are wrong.'
+  - 'Uncorrected 50 Hz mains interference is present in the released spectra. Averaging the 450 training series of SemgHandMovementCh2 gives a mean power spectrum with a sharp isolated spike at bin 299 (131.7 versus ~28 in the neighbouring bins) and further spikes at bins 599 and 899 - i.e. 50 Hz and its 100 Hz and 150 Hz harmonics on a 0-250 Hz axis. The UCI page says a 50 Hz notch filter was applied; whatever was released here plainly does not have one. Mains amplitude varies with electrode contact and session, so this is a plausible recording-session shortcut, and it is by far the largest single feature in the data.'
+  - 'All three SemgHand* datasets are byte-for-byte the same 900 series. I hashed every series in all six train/test files: each dataset holds 900 distinct series and all three sets of 900 are identical. They differ only in the label vector attached and in how the 900 are split. Averaging results across the archive therefore counts this one 5-subject recording session three times, and a model tuned on one of them has seen every test case of the other two.'
+  - 'Only five subjects (three female, two male), and every subject appears on both sides of every split (verified by joining the SemgHandSubjectCh2 labels onto the other two datasets by series hash). Subject identity is available as a shortcut in all three tasks.'
+  - 'Channel 2 of a 2-channel recording was kept and channel 1 discarded; the archive gives no reason and does not say which forearm muscle channel 2 corresponds to.'
+  - 'The x-axis is really frequency in Hz (1500 bins spanning roughly 0-250 Hz at ~1/6 Hz resolution, consistent with a 3000-sample 6 s recording at 500 Hz). The archive ships this as a time series, but the axis is spectral: nothing temporal survives the transform, so sequence models are operating on a frequency profile.'
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.8667
+    acc_permuted: 0.6067
+    drop: 0.26
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 7.2
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.8667
+    acc_raw_values: 0.8044
+    acc_summary_stats: 0.74
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.0622
+    gap_summary: 0.1267
+    seed: 0
+    runtime_s: 6.7
+    run: '2026-09-04'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=SemgHandSubjectCh2
+  - 'UCI Machine Learning Repository, "sEMG for Basic Hand movements" (https://archive.ics.uci.edu/dataset/313/semg+for+basic+hand+movements, read)'
+  - 'Sapsanis, Georgoulas, Tzes, Lymberopoulos, "Improving EMG based classification of basic hand movements using EMD", IEEE EMBC 2013, PMID 24111045 (not read - paywalled)'
+  - 'README.md shipped in the dataset zip at https://www.timeseriesclassification.com/aeon-toolkit/SemgHandSubjectCh2.zip (read)'

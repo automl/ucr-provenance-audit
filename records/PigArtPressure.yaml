@@ -1,0 +1,160 @@
+name: PigArtPressure
+archive:
+- UCR
+archive_type_tag: HEMODYNAMICS
+n_train: 104
+n_test: 208
+series_length: 2000
+n_channels: 1
+n_classes: 52
+archive_page:
+  description: 'In the test set, a class is represented by four examples, the second and third
+    2000 data points of the *before* time series and the second and third 2000 data points
+    of the *after* time series.  ## PigAirwayPressure Airway pressure measurements  ## PigArtPressure
+    Arterial blood pressure measurements  ## PigCVP Central venous pressure measurements   Data
+    created by Mathie Guillame-Bert et al. (see [1]). Data edited by Shaghayegh Gharghabi
+    and Eamonn Keogh.  [1] Guillame-Bert, Mathieu, and Artur Dubrawski. "Classification of
+    time sequences using graphs of temporal constraints." The Journal of Machine Learning
+    Research 18.1 (2017): 4370-4403.'
+  donated_by: M. Guillame-Bert
+  data_source_link: http://jmlr.org/papers/v18/15-403.html
+  second_link: ''
+original_problem:
+  description: >
+    Early detection of internal bleeding after surgery, studied in an animal model.
+    Guillame-Bert & Dubrawski (JMLR 2017), Sec. 7.4 "Internal Bleeding Detection Data
+    Set", p. 18: "Undetected internal bleeding during and after surgical procedures is
+    a major medical concern. Early and reliable detection of internal bleeding is
+    therefore considered a significant medical research problem. We assembled the
+    Bleeding Detection Data Set from vital signs measured at high frequency (250Hz)
+    using a bed-side hemodynamic monitoring system. The collected measurements include
+    arterial blood pressure, central venous pressure, and airway pressure. The data has
+    been collected from a cohort of 52 healthy pigs subjected to induced slow bleeding.
+    Each animal has been sedated, instrumented, left to rest for half an hour, and then
+    bled at the fixed rate of 20mL/min. From the vital sign records of each pig, we
+    randomly sampled two 30 second long segments of data: One from the resting period
+    before and one approximately 2 minutes into the bleeding. Pre- and post-bleeding
+    segments are respectively labeled as negative and positive." The clinical target
+    was aggressive: "current clinical practice is usually unable to detect internal
+    bleeding earlier than 10 to 15 minutes after the onset", and they test at the
+    2-minute mark, "when the data is not yet visually differentiable to expert
+    clinicians".
+  prediction_target: >
+    In the source study, bleeding state - a binary label (pre-bleed vs 2 minutes into
+    induced bleeding). In the archive version, the label is instead which of the 52
+    individual pigs the segment came from.
+  input_as_originally_posed: bedside hemodynamic monitoring of a sedated pig (airway pressure, arterial blood pressure and central venous pressure recorded together at 250 Hz)
+  task_family: biometric-identification
+  stakeholder_and_use: >
+    Critical-care and trauma clinicians; the goal is an alarm that detects occult
+    haemorrhage minutes rather than tens of minutes after onset.
+  source: >
+    Guillame-Bert, Mathieu, and Artur Dubrawski, "Classification of Time Sequences
+    using Graphs of Temporal Constraints", Journal of Machine Learning Research 18(1),
+    2017, 4370-4403. PDF read 2026-08 (Sec. 7.4, p. 18; Fig. 8 caption, p. 19).
+  provenance_confidence: high
+
+translation:
+  transformation: [channel-selection, windowing, z-normalization]
+  what_the_x_axis_is: time
+  sampling: >
+    250 Hz. Each archive series is 2000 samples = 8 seconds, cut from the source
+    study's 30-second segments. Per class (= per pig): the training set holds 2
+    segments and the test set holds 4, which the archive page describes as "the second
+    and third 2000 data points of the *before* time series and the second and third
+    2000 data points of the *after* time series".
+  information_lost_or_added: >
+    The source data is multivariate by construction - airway pressure, arterial
+    pressure and central venous pressure were recorded simultaneously from the same
+    animal - and the bleeding signature lives in their joint behaviour. This dataset
+    presents arterial blood pressure alone. The before/after structure, which is the clinically
+    meaningful contrast, is present in the data but not in the labels: it becomes a
+    hidden within-class factor. Z-normalisation additionally removes absolute pressure
+    level, which is the single most obvious haemodynamic consequence of blood loss.
+  label_semantics_changed: >
+    yes: the source study's binary bleeding/no-bleeding label was discarded and
+    replaced by a 52-way animal-identity label constructed by the curators.
+
+benchmark_task:
+  description: >
+    Given an 8-second window of arterial blood pressure from a sedated pig, identify which of 52
+    animals it came from. 104 train (2 per pig) / 208 test (4 per pig).
+  is_same_as_original: different-task
+
+verdict: native-tsc
+verdict_rationale: >
+  Genuinely temporal physiological pressure waveforms sampled at 250 Hz, so the
+  modality is native TSC - but the benchmark's question (which animal?) is not the
+  clinical question (is it bleeding?) that the recordings were made to answer.
+known_issues:
+  - >
+    The class is animal identity, and the source authors state that this is the
+    dominant structure in the data. Fig. 8 caption, p. 19: "Note that in practice,
+    vital signs of different animals tend to look less similar than vital signs of a
+    same animal before and after bleeding." In other words, the archive turned the
+    nuisance factor into the target and threw away the signal of interest.
+  - >
+    Train/test independence fails by construction. The 2 training and 4 test windows
+    of a class are consecutive 8-second slices of the same two 30-second recordings of
+    the same animal, minutes apart at most. A test window is near-adjacent in time to
+    a training window of its own class. Measured accuracy therefore conflates a stable
+    per-animal physiological signature with segment-to-recording matching, and
+    overstates how well the same animal would be recognised in a recording made at any
+    other time.
+  - >
+    Why identity labels rather than the source study's binary bleeding label (our
+    reconstruction - the curators document no rationale): under this adjacent-window
+    split, a before/after label could be read off the near-duplicate sibling window of
+    the same recording, so binary accuracy would measure recording retrieval, not
+    bleeding physiology - the more so given the Fig. 8 observation above that
+    within-animal similarity dominates the before/after contrast. A leakage-free
+    binary benchmark needs animal-held-out splits, which the flat UCR train/test
+    format cannot express, and would rest on only 52 independent animals. The 52-way
+    identity labelling is the one framing under which this split design is internally
+    coherent about what it measures.
+  - >
+    PigAirwayPressure, PigArtPressure and PigCVP are three simultaneously recorded
+    channels of the SAME 52-pig experiment, with identical class sets and identical
+    split sizes. They are not three independent datasets; averaging or rank-testing
+    over the UCR archive counts this one experiment three times, and per-dataset
+    results across the three are strongly correlated.
+  - >
+    52 classes with 2 training examples each - a few-shot identification problem
+    rather than a classification problem, which is worth stating whenever accuracy is
+    reported.
+  - >
+    The clinically interesting before/after label is available in the source data and
+    is silently discarded here; a verifier wanting a meaningful benchmark should
+    consider recovering it from the source (available per the paper at
+    mathieu.guillame-bert.com).
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.9808
+    acc_permuted: 0.274
+    drop: 0.7067
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 6.4
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.9808
+    acc_raw_values: 0.0865
+    acc_summary_stats: 0.5962
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.8942
+    gap_summary: 0.3846
+    seed: 0
+    runtime_s: 21.7
+    run: '2026-09-04'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=PigArtPressure
+  - https://www.timeseriesclassification.com/description.php?Dataset=PigAirwayPressure
+  - https://www.timeseriesclassification.com/description.php?Dataset=PigCVP
+  - Guillame-Bert & Dubrawski, "Classification of Time Sequences using Graphs of Temporal Constraints", JMLR 18(1):4370-4403, 2017 (http://jmlr.org/papers/v18/15-403.html)
+  - Dau et al., "The UCR Time Series Archive", arXiv:1810.07758 (Sec. III-C, p. 3)

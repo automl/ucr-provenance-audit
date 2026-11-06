@@ -1,0 +1,137 @@
+name: ACSF1
+archive:
+- UCR
+archive_type_tag: DEVICE
+n_train: 100
+n_test: 100
+series_length: 1460
+n_channels: 1
+n_classes: 10
+archive_page:
+  description: "The dataset is compiled from ACS-F1, the first version of the database of\
+    \ appliance consumption signatures. The dataset contains the power consumption of typical\
+    \ appliances. The recordings are characterized by long idle periods and some high bursts\
+    \ of energy consumption when the appliance is active. \n\n\n The classes correspond to\
+    \ 10 categories of home appliances: \n\nmobile phones (via chargers), coffee machines,\
+    \ computer stations (including monitor), fridges and freezers, Hi-Fi systems (CD players),\
+    \ lamp (CFL), laptops (via chargers), microwave ovens, printers, and televisions (LCD\
+    \ or LED).   There is nothing to infer from the order of examples in the train and test\
+    \ set. \n\n Data created by Gisler, Christophe, et al. [1] and  (Link Here)  Data edited\
+    \ by Patrick Schafer and Ulf Leser (see [2]). \n\n\n  [1] Gisler, Christophe, et al. \"\
+    Appliance consumption signature database and recognition test protocols.\" Systems, Signal\
+    \ Processing and their Applications (WoSSPA), 2013 8th International Workshop on. IEEE,\
+    \ 2013.   \n  [2] Schafer, Patrick, and Ulf Leser. \"Fast and accurate time series classification\
+    \ with weasel.\" Proceedings of the 2017 ACM on Conference on Information and Knowledge\
+    \ Management. ACM, 2017."
+  donated_by: P. Schafer
+  data_source_link: ''
+  second_link: ''
+original_problem:
+  description: >
+    ACS-F1 is a database of appliance consumption signatures built at the
+    iCoSys institute (HES-SO Fribourg) explicitly to support appliance
+    recognition: the project's own page states the data are "appliance
+    consumption signatures and categories to be used for appliance recognition
+    tasks". Electrical quantities were recorded through plug-based low-end
+    sensors for about 100 home appliances spanning 10 categories, in two
+    acquisition sessions of one hour each per appliance, and two test protocols
+    were defined so that recognition methods could be compared.
+  prediction_target: appliance category (10 classes of household device)
+  input_as_originally_posed: >
+    plug-level electrical consumption measurements (real power, reactive power,
+    RMS current, frequency, RMS voltage, phase) of a single appliance
+  task_family: device-monitoring
+  stakeholder_and_use: >
+    Intrusive/plug-level load monitoring and smart-plug or smart-home products
+    that must recognise what is plugged in; also a reference corpus for NILM
+    research.
+  source: >
+    Gisler, Ridi, Zufferey, Khaled, Hennebert, "Appliance consumption signature
+    database and recognition test protocols", WoSSPA 2013 (the primary paper was
+    NOT read -- IEEE Xplore is paywalled). The database description page was
+    read: https://icosys.ch/acs-f1 -- "2 sessions of 1 hour each",
+    "Acquisition sampling frequency: 10^-1 Hz", "about 100 home appliances
+    divided into 10 categories". The UCR version was extracted by Schaefer &
+    Leser (WEASEL, CIKM 2017).
+  provenance_confidence: medium
+translation:
+  transformation:
+  - z-normalization
+  what_the_x_axis_is: time
+  sampling: >
+    ACS-F1 was acquired at 10^-1 Hz (one sample per ~10 seconds) in two one-hour
+    sessions per appliance, which is ~360 samples per session; the UCR series
+    are 1460 points long, so the released series span roughly 4 hours at that
+    rate. How the 1460-point series were assembled from the documented 1-hour
+    sessions is not stated by either the archive page or the ACS-F1 site.
+  information_lost_or_added: >
+    Only one of ACS-F1's six measured electrical quantities survives in the
+    univariate UCR version (the archive page calls it "the power consumption"),
+    discarding reactive power and phase, which are precisely the features
+    appliance-signature work relies on. The shipped values are z-normalized
+    (verified directly in the aeon copy of ACSF1_TRAIN.ts: values such as
+    -0.58475375 / 1.730991 repeating), so absolute wattage -- the strongest cue
+    for separating a phone charger from a computer station -- is removed.
+  label_semantics_changed: "no"
+benchmark_task:
+  description: >
+    Classify a 1460-point single-appliance consumption trace into one of 10
+    appliance categories, with 100 train and 100 test series.
+  is_same_as_original: "yes"
+verdict: native-tsc
+verdict_rationale: >
+  Real plug-level power consumption sampled over time, used for exactly the
+  appliance-recognition task ACS-F1 was built for; only the channel reduction
+  and normalization are curatorial.
+known_issues:
+- >
+  The 100/100 split matches ACS-F1's Test Protocol 1.0, which trains on session
+  1 and tests on session 2 of the SAME appliance instances. If so, every test
+  appliance is also in the training set, and per-unit idiosyncrasies (a specific
+  fridge, a specific printer) are a legitimate shortcut -- the benchmark
+  measures re-identification of known units, not generalisation to unseen
+  appliances. The archive page does not state which protocol was used, so this
+  should be checked against the ACS-F1 metadata during verification.
+- >
+  Series length 1460 cannot be reconciled with ACS-F1's documented "2 sessions
+  of 1 hour each" at 10^-1 Hz (~360 samples); the editing step by Schaefer &
+  Leser is undocumented. Treat the "one series = one hour session" reading as
+  unverified.
+- >
+  10 classes with only 10 training examples per class; single-split accuracy is
+  high-variance.
+- >
+  z-normalization removes absolute power, which is arguably the defining feature
+  of an appliance category; the archive task is therefore harder than, and not
+  equivalent to, the ACS-F1 recognition task as its authors posed it.
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.91
+    acc_permuted: 0.81
+    drop: 0.1
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 5.3
+    run: '2026-09-03'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.91
+    acc_raw_values: 0.65
+    acc_summary_stats: 0.74
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.26
+    gap_summary: 0.17
+    seed: 0
+    runtime_s: 4.1
+    run: '2026-09-03'
+references:
+- https://www.timeseriesclassification.com/description.php?Dataset=ACSF1
+- https://icosys.ch/acs-f1 (ACS-F1 database description page)
+- >
+  Gisler, Ridi, Zufferey, Khaled, Hennebert, "Appliance consumption signature
+  database and recognition test protocols", WoSSPA 2013 (NOT READ -- paywalled)
+- Schaefer & Leser, "Fast and accurate time series classification with WEASEL", CIKM 2017 (data editors; not read)
+- Local check of .venv/lib/python3.11/site-packages/aeon/datasets/data/ACSF1/ACSF1_TRAIN.ts (values are z-normalized)

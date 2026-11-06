@@ -1,0 +1,170 @@
+name: InlineSkate
+archive:
+- UCR
+archive_type_tag: MOTION
+n_train: 100
+n_test: 550
+series_length: 1882
+n_channels: 1
+n_classes: 7
+archive_page:
+  description: 'The InlineSkate data was collected from tests in professional
+
+    In-Line Speed Skating by Dr. Olaf Hoos (Department of Sports
+
+    Medicine, University Marburg) and used in this context by Fabian
+
+    Morchen in his PhD thesis "Time Series Knowledge Mining" at the
+
+    University of Marlberg, Germany.
+
+
+    An athlete performed a standardized indoor test at a speed of
+
+    7,89m/s on a large motor driven treadmill. EMG and kinematic data
+
+    of the right body side were measured for 30 seconds, corresponding
+
+    to 19 complete movement cycles. The EMG data of 7 major leg
+
+    extensor and flexor muscles of the right body side were collected
+
+    using bipolar surface electrodes attached to the relevant muscles.
+
+    For this data, each time series represents an angular measurement
+
+    of the ankle during one movement cycle.
+
+
+    Data has been truncated to equal length. We assume the prediction
+
+    problem is to classify one of seven individuals, although this is
+
+    not confirmed.'
+  donated_by: F. Morchen, O. Hoos
+  data_source_link: http://idb.csie.ncku.edu.tw/tsengsm/COURSE/DM/Paper/p668.pdf
+  second_link: ''
+original_problem:
+  description: >
+    Sports-medicine biomechanics. Per the archive page, the data "was collected from
+    tests in professional In-Line Speed Skating by Dr. Olaf Hoos (Department of Sports
+    Medicine, University Marburg) and used in this context by Fabian Morchen in his PhD
+    thesis 'Time Series Knowledge Mining'". The protocol described is: "An athlete
+    performed a standardized indoor test at a speed of 7,89m/s on a large motor driven
+    treadmill. EMG and kinematic data of the right body side were measured for 30
+    seconds, corresponding to 19 complete movement cycles." The purpose in Morchen's
+    work was pattern discovery in multivariate muscle-activation data, not
+    classification. Crucially, the archive itself does not know what the released
+    labels mean: "We assume the prediction problem is to classify one of seven
+    individuals, although this is not confirmed."
+  prediction_target: >
+    Undocumented. The curators assume the seven classes are seven individual skaters
+    but explicitly flag this as unconfirmed. An alternative reading consistent with the
+    same paragraph - seven measured muscles/channels - cannot be excluded, since the
+    text mentions "7 major leg extensor and flexor muscles" in the same breath as the
+    seven classes.
+  input_as_originally_posed: >
+    surface EMG of seven leg muscles plus kinematic (joint-angle) measurement of the
+    right body side during treadmill inline speed skating
+  task_family: activity-recognition
+  # Closest available value: body-tracked human motion. It is an imperfect fit,
+  # because the classes are probably individuals rather than activities, and because
+  # the original study posed no classification problem at all.
+  stakeholder_and_use: sports scientists and coaches analysing skating technique and muscle coordination
+  source: >
+    timeseriesclassification.com description page (read 2026-08), which credits Olaf
+    Hoos (Univ. Marburg, Sports Medicine) and Fabian Morchen's PhD thesis "Time Series
+    Knowledge Mining" (Univ. Marburg). Neither the thesis nor the paper behind the
+    archive's `data_source_link` (idb.csie.ncku.edu.tw/.../p668.pdf) could be
+    retrieved - the link failed to fetch - so no primary text was read.
+  provenance_confidence: low
+  # What would raise it: Morchen's thesis or the Morchen/Ultsch/Hoos papers on
+  # muscle-activation patterns, which should state the number of athletes, how cycles
+  # were segmented, and what the seven groups are.
+
+translation:
+  transformation: [channel-selection, windowing, resampling, z-normalization]
+  what_the_x_axis_is: time
+  sampling: >
+    One series per movement cycle: "each time series represents an angular measurement
+    of the ankle during one movement cycle", length 1882 after the archive "truncated
+    [the data] to equal length". Sampling rate is not stated. Note an internal
+    inconsistency: 30 seconds of one athlete gives 19 cycles, yet the archive ships 650
+    series in 7 classes (~93 per class), so many more tests or athletes than the
+    description mentions must be involved.
+  information_lost_or_added: >
+    The original recording is multivariate (7 EMG channels plus kinematics); only a
+    single kinematic channel, the ankle angle, survives - so the muscle-activation
+    content that motivated the original study is entirely absent. Truncation to a
+    common length cuts the end off longer movement cycles, which biases against
+    slower cycles, and z-normalisation removes the joint-angle range of motion.
+  label_semantics_changed: >
+    yes: the source study posed no classification problem; the class variable was
+    introduced by the curators, and they state they are not sure what it is.
+
+benchmark_task:
+  description: >
+    Classify a length-1882 ankle-angle series from one inline-skating movement cycle
+    into one of seven classes (assumed by the curators, unconfirmed, to be seven
+    individuals). 100 train / 550 test.
+  is_same_as_original: different-task
+
+verdict: unclear
+verdict_rationale: >
+  The signal itself is a genuinely temporal joint-angle trajectory, but no source
+  states what the seven classes mean - the curators themselves flag their
+  "seven skaters" reading as unconfirmed - so what the benchmark asks cannot be
+  stated (rule 5, which takes precedence over the modality rules).
+known_issues:
+  - >
+    The archive does not know what the classes are - "We assume the prediction problem
+    is to classify one of seven individuals, although this is not confirmed." Any
+    domain interpretation of a result on this dataset is unsupported. This is the
+    dominant issue and it is the archive's own admission.
+  - >
+    If the classes are individuals, the benchmark is subject identification from gait,
+    and every cycle of a person comes from the same recording session - so train/test
+    windows are consecutive cycles of the same continuous treadmill run and are not
+    independent.
+  - >
+    The description is internally inconsistent: one athlete and 19 cycles are
+    described, but the released data has 650 series across 7 classes.
+  - >
+    Series were "truncated to equal length", which silently discards the tail of
+    longer cycles rather than resampling them - a length-normalisation artifact.
+  - >
+    Only the ankle-angle channel is released from a rich EMG + kinematics recording.
+  - >
+    Consistently one of the hardest datasets in the archive (1NN-DTW error around
+    0.61-0.66 in the UCR briefing document), which is unsurprising if the label is
+    subject identity from a single joint angle.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.4764
+    acc_permuted: 0.3327
+    drop: 0.1436
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 6.5
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.4764
+    acc_raw_values: 0.2873
+    acc_summary_stats: 0.2636
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.1891
+    gap_summary: 0.2127
+    seed: 0
+    runtime_s: 6.1
+    run: '2026-09-04'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=InlineSkate
+  - Morchen, F., "Time Series Knowledge Mining", PhD thesis, Philipps-University Marburg (cited by the archive page; not reached)
+  - UCR Time Series Classification Archive Briefing Document 2018 (https://www.cs.ucr.edu/~eamonn/time_series_data_2018/BriefingDocument2018.pdf) - baseline error table and "with z-normalization" exemplar plot
+  - Dau et al., "The UCR Time Series Archive", arXiv:1810.07758 (Sec. III-C, p. 3)

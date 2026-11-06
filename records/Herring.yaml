@@ -1,0 +1,124 @@
+name: Herring
+archive:
+- UCR
+archive_type_tag: IMAGE
+n_train: 64
+n_test: 64
+series_length: 512
+n_channels: 1
+n_classes: 2
+archive_page:
+  description: 'Otoliths are calcium carbonate structures present in many
+
+    vertebrates, found within the sacculus of the pars inferior. There
+
+    are three types of otoliths: sagittae, lapilli, and asterisci. In
+
+    fish, it is primarily the sagittal otoliths that are studied, as
+
+    they are larger and easier to prepare and observe. Otoliths vary
+
+    markedly in shape and size between species, but are of similar
+
+    shape to other stocks of the same species. Otoliths contain
+
+    information that can be used by `expert readers'' to determine
+
+    several key factors important in managing fish stock. Analysis of
+
+    otolith boundaries may allow estimation of stock composition,
+
+    including whether the samples are from one stock or multiple
+
+    stocks, allowing management decisions to be made}. This data
+
+    consists of Otholith outlines from two classes of Herring: North
+
+    sea or Thames. More details are in the paper  Clupea Harangus:
+
+    Interspecies distinction using curvature scale space and
+
+    shapelets'
+  donated_by: J. Mapp, A. Bagnall
+  data_source_link: http://www2.cmp.uea.ac.uk/~mhf/otoliths/otoliths.htm
+  second_link: ''
+original_problem:
+  description: >
+    Herring stock identification from otolith shape - a fisheries-management
+    problem. The archive page sets out the domain background: "Otoliths contain
+    information that can be used by 'expert readers' to determine several key
+    factors important in managing fish stock. Analysis of otolith boundaries may
+    allow estimation of stock composition, including whether the samples are from
+    one stock or multiple stocks, allowing management decisions to be made." The
+    study behind the data (Mapp, Fisher, Bagnall, Lines, Warne & Scutt Phillips,
+    ICPRAM 2013) compared "Curvature Scale Space (CSS) representation with
+    Shapelet transformed data" to separate the sagittal otoliths of North Sea and
+    Thames herring, and concluded that the discriminating features "may lie not
+    in the major inflection points, but the boundary points between them".
+  prediction_target: herring stock of origin (North Sea vs Thames)
+  input_as_originally_posed: image of a sagittal otolith (ear bone) taken from a herring
+  task_family: image-classification
+  stakeholder_and_use: fisheries scientists and managers estimating stock composition of catches
+  source: >
+    Mapp, Fisher, Bagnall, Lines, Warne & Scutt Phillips, "Clupea Harengus:
+    Intraspecies Distinction using Curvature Scale Space and Shapelets -
+    Classification of North-sea and Thames Herring using Boundary Contour of
+    Sagittal Otoliths", ICPRAM 2013, pp. 138-143 - title, authorship and abstract
+    read via the SciTePress record; the full paper was not reached, and the UEA
+    otolith page linked from the archive would not serve (TLS certificate
+    mismatch).
+  provenance_confidence: medium
+
+translation:
+  transformation: [contour-unrolling, resampling, z-normalization]
+  what_the_x_axis_is: arc-length
+  sampling: 512 points around the otolith boundary contour; the reference point and direction are undocumented on the archive page.
+  information_lost_or_added: >
+    Otolith surface structure - notably the growth rings expert readers use for
+    ageing - is discarded; only the boundary survives. Otolith size, which grows
+    with the fish, is removed by normalization, which is helpful if age is a
+    confounder and harmful if size genuinely separates stocks.
+  label_semantics_changed: "no"
+
+benchmark_task:
+  description: Classify a length-512 otolith-boundary series as North Sea or Thames herring.
+  is_same_as_original: "yes"
+
+verdict: translated-modality
+verdict_rationale: >
+  An otolith photograph reduced to its boundary contour indexed by arc-length;
+  the source modality is an image and the axis is spatial.
+known_issues:
+  - 64 train / 64 test - a single misclassification moves accuracy by 1.6%, and reported accuracies sit close to chance (Dau et al. quote a 1-NN Euclidean error of 0.484 for Herring).
+  - 'Ground truth is stock assignment, which is itself inferred: fish are assigned to a stock by capture location and season, so labels carry biological uncertainty.'
+  - Otolith shape varies with fish age and growth conditions, which are not exposed in the released series and may confound the stock label.
+  - Full source paper not read; the outline-extraction step is unverified.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.6875
+    acc_permuted: 0.5938
+    drop: 0.0938
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 6.2
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.6875
+    acc_raw_values: 0.625
+    acc_summary_stats: 0.5469
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.0625
+    gap_summary: 0.1406
+    seed: 0
+    runtime_s: 4.1
+    run: '2026-09-04'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=Herring
+  - 'Mapp et al., "Clupea Harengus: Intraspecies Distinction using Curvature Scale Space and Shapelets", ICPRAM 2013 - https://www.scitepress.org/Link.aspx?doi=10.5220/0004226101380143 (abstract only)'
+  - Dau et al., "The UCR Time Series Archive", arXiv:1810.07758

@@ -1,0 +1,125 @@
+name: UWaveGestureLibraryY
+archive:
+- UCR
+archive_type_tag: HAR
+n_train: 896
+n_test: 3582
+series_length: 315
+n_channels: 1
+n_classes: 8
+archive_page:
+  description: 'A set of eight simple gestures generated from accelerometers. First
+
+    described in the paper uWave: Accelerometer-based personalized
+
+    gesture recognition and its applications'
+  donated_by: J. Liu
+  data_source_link: http://www.sciencedirect.com/science/article/pii/S1574119209000674
+  second_link: ''
+original_problem:
+  description: >
+    Liu, Zhong, Wickramasuriya and Vasudevan built uWave, a personalized
+    gesture-recognition system driven by a single three-axis accelerometer, so
+    that consumer devices could be controlled by hand gestures with only one
+    training sample per gesture. The gesture vocabulary was not theirs: Sec. V-A
+    (p. 5): "We employ a set of eight simple gestures identified by a Nokia
+    research study [4] as preferred by users for interaction with home
+    appliances." The library that became the UCR data set is described in
+    Sec. V-B (p. 5): "We collect gestures corresponding to the Nokia vocabulary
+    from eight participants with the Wii remote-based prototype... For a
+    participant, gestures are collected from seven days within a period of about
+    three weeks. On each day, the participant holds the Wii remote in hand and
+    repeats each of the eight gestures in the Nokia vocabulary ten times. The
+    database consists of 4480 gestures in total and 560 for each participant."
+  prediction_target: which of the eight predefined vocabulary gestures was performed
+  input_as_originally_posed: >
+    three-axis acceleration recorded by a hand-held Nintendo Wii remote; the
+    gesture is delimited by the user pressing and releasing the 'A' button
+    (Sec. IV, p. 4)
+  task_family: activity-recognition
+  stakeholder_and_use: >
+    designers of gesture-based interaction for consumer electronics and mobile
+    devices; also proposed by the authors for gesture-based user authentication
+  source: >
+    Liu, Zhong, Wickramasuriya, Vasudevan, "uWave: Accelerometer-based
+    Personalized Gesture Recognition and Its Applications", PerCom 2009 /
+    Pervasive and Mobile Computing 5(6), 2009. Read in full (author copy,
+    yecl.org/publications/liu09percom.pdf).
+  provenance_confidence: high
+translation:
+  transformation: [channel-selection, z-normalization]
+  what_the_x_axis_is: time
+  sampling: >
+    Wii remote ADXL330 three-axis accelerometer, range -3g to 3g, operated at
+    100 Hz (Liu et al. Sec. IV, p. 4: "The accelerometer has a range of -3g to 3g
+    and noise below 3.5mg when operating at 100Hz"). Only the y-axis channel is
+    retained here, at a fixed length of 315 points (~3 s at 100 Hz).
+  information_lost_or_added: >
+    Two of the three accelerometer axes are discarded, and gestures such as
+    "circle" or "square" are only weakly distinguishable from one axis. Gesture
+    duration is normalized away by the fixed length 315; participant identity and
+    recording day, both recorded in the original study, are not released.
+  label_semantics_changed: "no"
+benchmark_task:
+  description: >
+    Classify a length-315 single-axis accelerometer series as one of the eight
+    uWave vocabulary gestures.
+  is_same_as_original: narrowed
+verdict: native-tsc
+verdict_rationale: >
+  Genuine hand-held accelerometer recordings sampled at 100 Hz; the only
+  translation is dropping two axes and fixing the length, so the x-axis remains
+  physical time.
+known_issues:
+  - >
+    Only eight participants (Liu et al. Sec. V-B, p. 5), and the archive's
+    896/3582 split is a plain shuffle of the ~4480-gesture library, so the same
+    people and the same recording days appear in both train and test. Nothing in
+    the released files identifies the participant, so a subject-disjoint
+    evaluation is not possible: strong identity/session shortcut.
+  - >
+    The archive's fixed length of 315 is undocumented. Gestures are naturally
+    variable-length (delimited by a button press/release, Liu Sec. IV), so some
+    padding, truncation or resampling was applied by the archive editors; neither
+    the description page nor Liu et al. states which. A human verifier should
+    inspect the raw files for padding artifacts.
+  - >
+    Data are z-normalized, as for all pre-2018 archive data (UCR briefing
+    Sec. III-C, p. 3: "The time series are already z-normalized to remove offset
+    and scaling").
+  - >
+    UWaveGestureLibraryX, Y, Z and All are the same recordings; results across
+    them are not independent evidence. A genuine multivariate version exists as
+    UEA "UWaveGestureLibrary" (3 dimensions, length 315, 120 train / 320 test).
+  - >
+    archive_type_tag: recorded here as HAR (site aggregate table); the archive's
+    own DataSummary.csv files these four under "Motion".
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.7761
+    acc_permuted: 0.6957
+    drop: 0.0804
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 6.9
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.7761
+    acc_raw_values: 0.6806
+    acc_summary_stats: 0.3384
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.0955
+    gap_summary: 0.4377
+    seed: 0
+    runtime_s: 7.4
+    run: '2026-09-04'
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=UWaveGestureLibraryY
+  - 'Liu, Zhong, Wickramasuriya, Vasudevan, "uWave: Accelerometer-based Personalized Gesture Recognition and Its Applications", PerCom 2009 (https://www.yecl.org/publications/liu09percom.pdf) - read in full'
+  - Dau, Bagnall, Kamgar, Yeh, Zhu, Gharghabi, Ratanamahatana, Keogh, "The UCR Time Series Archive", arXiv:1810.07758 (PDF read)
+  - Bagnall, Dau, Lines, Flynn, Large, Bostrom, Southam, Keogh, "The UEA multivariate time series classification archive, 2018", arXiv:1811.00075 (dataset descriptions for UWaveGestureLibrary and Cricket)
+  - UCR archive DataSummary.csv (baseline error rates), cached at scripts/sources/ucr_DataSummary.csv

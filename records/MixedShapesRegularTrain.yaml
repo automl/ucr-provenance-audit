@@ -1,0 +1,114 @@
+name: MixedShapesRegularTrain
+archive:
+- UCR
+archive_type_tag: IMAGE
+n_train: 500
+n_test: 2425
+series_length: 1024
+n_channels: 1
+n_classes: 5
+archive_page:
+  description: "The data consist of \"pseudo\" time series obtained by converting two-dimensional\
+    \ shapes into one-dimensional time series (see [1], [2]).  There are five classes corresponding\
+    \ to different shapes.  \n\n\n  Class 1: Arrowhead\n  Class 2: Butterfly\n  Class 3: Fish\n\
+    \  Class 4: Seashell\n  Class 5: Shield  \n\n\nWe make two datasets out of these data.\
+    \ The two datasets share a same test set and only differ in the number of training instances.\
+    \  Original data created by Eamonn Keogh (see [1], [2]). Data edited by Hoang Anh Dau.\
+    \ Image from [1].\n\n [1] Wang, Xiaoyue, et al. \"Annotating historical archives of images.\"\
+    \ Proceedings of the 8th ACM/IEEE-CS joint conference on Digital libraries. ACM, 2008.\
+    \  \n\n [2] Keogh, Eamonn, et al. \"LB_Keogh supports exact indexing of shapes under rotation\
+    \ invariance with arbitrary representations and distance measures.\" Proceedings of the\
+    \ 32nd international conference on Very large data bases. VLDB Endowment, 2006."
+  donated_by: E. Keogh
+  data_source_link: ''
+  second_link: ''
+original_problem:
+  description: >
+    Automatic annotation of images in digitized historical archives. Wang, Ye,
+    Keogh & Shelton (JCDL 2008) framed it: with millions of scanned books coming
+    online, "there will also be tens of millions of pages of images... a
+    considerable fraction of the images may be amiable to automatic annotation by
+    algorithms that can link the historical image with a modern contemporary,
+    with its attendant meta tags" (Abstract/Sec. 1). Their material is natural
+    history plates and cultural artefacts (they illustrate with an 1849
+    scientific text, Historia Naturalis engravings and a 15th-century treatise on
+    heraldry). The five classes here - arrowhead, butterfly, fish, seashell,
+    shield - are exactly that kind of object.
+  prediction_target: object category depicted by the shape (arrowhead, butterfly, fish, seashell, shield)
+  input_as_originally_posed: engraving, drawing or photograph of an object in a historical manuscript or book
+  task_family: image-classification
+  stakeholder_and_use: digital libraries wanting to index and annotate image content in scanned historical collections
+  source: >
+    Wang, Ye, Keogh & Shelton, "Annotating historical archives of images", JCDL
+    2008 (read; cited as [1] by the archive page), together with Keogh et al.,
+    "LB_Keogh supports exact indexing of shapes under rotation invariance with
+    arbitrary representations and distance measures", VLDB 2006 (cited as [2],
+    not read). Neither source itemises this five-class dataset as released, so
+    the composition of the archive version rests on the archive page.
+  provenance_confidence: medium
+
+translation:
+  transformation: [contour-unrolling, resampling, z-normalization]
+  what_the_x_axis_is: arc-length
+  sampling: >
+    1024 points per outline. Wang et al. state the mapping and put "time series"
+    in scare quotes themselves: "The basic idea to transform the two-dimensional
+    shape to a one-dimensional 'time series'... The distance from every point on
+    the profile to the center is measured and treated as the Y-axis of a time
+    series of length n" (Sec. 2.1.2).
+  information_lost_or_added: >
+    Colour and texture are dropped, although Wang et al.'s whole contribution was
+    that shape alone is often insufficient and must be weighted against colour
+    ("here there is very little variation in shape (and none of it meaningful),
+    and we would wish the algorithm to consider color only" for heraldic
+    shields). Object size is removed by z-normalization; rotation of the original
+    object becomes a cyclic shift of the series.
+  label_semantics_changed: "no"
+
+benchmark_task:
+  description: Classify a length-1024 outline series into one of five shape classes.
+  is_same_as_original: different-task
+  # The original problem was annotation by linking an image to a modern
+  # counterpart (retrieval with combined shape+colour features); the archive
+  # poses closed-set five-way classification on shape alone.
+
+verdict: translated-modality
+verdict_rationale: >
+  Two-dimensional shapes converted to distance-from-centre profiles indexed by
+  contour arc-length - the source's own description calls them "pseudo" time
+  series.
+known_issues:
+  - 'Shares an identical 2425-instance test set with the other MixedShapes variant; Dau et al. (arXiv:1810.07758) explain the design: "We created two train set versions: a smaller train set and a regular train set (both are accompanied by a same test set)." The two datasets are not independent benchmarks and must not be averaged as if they were.'
+  - 'Train size here is 500, so the pair measures training-set size, not two different problems.'
+  - Class names overlap with other UCR datasets (ArrowHead, Fish); whether instances are shared with those datasets is not documented and should be checked against the released files.
+  - Shape-only representation discards colour, which the source paper identified as decisive for some of these object types.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.9711
+    acc_permuted: 0.9212
+    drop: 0.0499
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 7.0
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.9711
+    acc_raw_values: 0.88
+    acc_summary_stats: 0.6713
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.0911
+    gap_summary: 0.2998
+    seed: 0
+    runtime_s: 7.0
+    run: '2026-09-04'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=MixedShapesRegularTrain
+  - Wang, Ye, Keogh & Shelton, "Annotating historical archives of images", JCDL 2008 - https://www.cs.ucr.edu/~eamonn/AnnotatingHistoricalImages.pdf
+  - Keogh et al., "LB_Keogh supports exact indexing of shapes under rotation invariance with arbitrary representations and distance measures", VLDB 2006 (cited, not read)
+  - Dau et al., "The UCR Time Series Archive", arXiv:1810.07758

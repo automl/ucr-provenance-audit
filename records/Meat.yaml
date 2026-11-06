@@ -1,0 +1,115 @@
+name: Meat
+archive:
+- UCR
+archive_type_tag: SPECTRO
+n_train: 60
+n_test: 60
+series_length: 448
+n_channels: 1
+n_classes: 3
+archive_page:
+  description: 'Food spectrographs are used in chemometrics to classify food types,
+
+    a task that has obvious applications in food safety and quality
+
+    assurance. The classes are chicken, pork and turkey. Duplicate
+
+    acquisitions aretaken from 60 independent samples. Obtained using
+
+    Fourier transform infrared (FTIR) spectroscopy with attenuated
+
+    total reflectance (ATR) sampling. As described in  Mid-infrared
+
+    spectroscopy and authenticity problems in selected meats: a
+
+    feasibility study  Al-Jowder O, Kemsley E K, Wilson R. H.(1997)
+
+    Food Chemistry 59 195-20'
+  donated_by: K. Kemlsey, A. Bagnall
+  data_source_link: http://asu.ifr.ac.uk/example-datasets-for-download/
+  second_link: ''
+original_problem:
+  description: >
+    A feasibility study at the Institute of Food Research, Norwich, into using
+    mid-infrared spectroscopy for meat authenticity: can minced chicken, pork
+    and turkey be told apart from their FTIR-ATR spectra? Abstract (Food
+    Chemistry 59:195-201, 1997, read via Europe PMC): "This paper describes the
+    results of a feasibility study into the use of mid-infrared spectroscopy
+    for addressing certain authenticity problems with selected fresh meats.
+    Preliminary analyses for meat speciation, the detection of 'frozen-thawed'
+    meat, and semi-quantitative analysis of meat mixtures are reported. ... It
+    was possible to distinguish minced chicken, pork and turkey meats from
+    their infrared spectra". The commercial motivation is species substitution
+    in minced-meat products.
+  prediction_target: meat species (chicken, pork or turkey)
+  input_as_originally_posed: mid-infrared FTIR-ATR spectrum of a fresh minced-meat sample
+  task_family: spectroscopy
+  stakeholder_and_use: meat-authenticity testing labs, food-safety regulators, processors
+  source: >
+    Al-Jowder, Kemsley, Wilson, "Mid-infrared spectroscopy and authenticity
+    problems in selected meats: a feasibility study", Food Chemistry 59,
+    195-201, 1997, doi:10.1016/S0308-8146(96)00289-0. Abstract read via the
+    Europe PMC REST API; full text not reached. The dataset itself is
+    described on the donor's own page, IFR Analytical Sciences "Example
+    Datasets for Download": "120 Mid-infrared (MIR) spectra of fresh minced
+    meats - chicken, pork and turkey. Duplicate acquisitions from 60
+    independent samples. Raw data matrix size [448 x 120]." That [448 x 120]
+    matches the archive exactly (length 448; 60 train + 60 test).
+  provenance_confidence: high
+
+translation:
+  transformation: [spectrum-as-series]
+  what_the_x_axis_is: wavelength
+  sampling: 448 absorbance values on the FTIR-ATR mid-IR wavenumber grid
+  information_lost_or_added: >
+    None structurally; the released vectors are the raw data matrix from the
+    donor's page. But the ordering is a wavenumber axis: neighbouring points
+    covary because IR absorption bands are broad, not through any temporal
+    process. PCA/PLS on the whole spectrum, as in the source paper, ignores
+    the ordering entirely.
+  label_semantics_changed: "no"
+
+benchmark_task:
+  description: Classify a univariate length-448 mid-IR spectrum as chicken, pork or turkey.
+  is_same_as_original: narrowed
+  # The paper posed three problems (speciation, frozen-thawed detection,
+  # mixture quantification); the archive keeps only the three-species
+  # speciation problem.
+
+verdict: ordered-not-temporal
+verdict_rationale: >
+  The benchmark asks the chemists' own speciation question, but the series
+  index is an FTIR wavenumber axis rather than time.
+known_issues:
+  - The 120 spectra are duplicate acquisitions from 60 independent samples, so each physical sample contributes two vectors; the archive does not say whether a sample's two replicates were kept on the same side of the 60/60 split. A nearest-neighbour check on the shipped data (z-normalised Euclidean distance, each test series against all training series) found no clear replicate pairing - median ratio of nearest to second-nearest distance 0.90, minimum 0.68 - so gross replicate leakage is not evident, but this is weak evidence, not proof.
+  - Small (60/60, 20 test cases per class); accuracy differences below ~3 points are not meaningful.
+  - Fresh minced meat only; the model says nothing about cooked or processed products.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.9667
+    acc_permuted: 0.9333
+    drop: 0.0333
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 5.4
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.9667
+    acc_raw_values: 0.85
+    acc_summary_stats: 0.9333
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.1167
+    gap_summary: 0.0333
+    seed: 0
+    runtime_s: 3.1
+    run: '2026-09-04'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=Meat
+  - 'Al-Jowder, Kemsley, Wilson, Food Chemistry 59:195-201, 1997, doi:10.1016/S0308-8146(96)00289-0 (abstract, via Europe PMC REST API)'
+  - 'IFR Analytical Sciences, "Example Datasets for Download" (http://asu.ifr.ac.uk/example-datasets-for-download/, via the Internet Archive)'

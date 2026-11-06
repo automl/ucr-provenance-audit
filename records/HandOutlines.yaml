@@ -1,0 +1,109 @@
+name: HandOutlines
+archive:
+- UCR
+archive_type_tag: IMAGE
+n_train: 1000
+n_test: 370
+series_length: 2709
+n_channels: 1
+n_classes: 2
+archive_page:
+  description: 'This series of 11 classification problems were created as part of Luke Davis''s
+    PhD titled "Predictive Modelling of Bone Ageing". They are all derived from the same images,
+    extracted from Cao et al. "Digital hand atlas and web-based bone age assessment: system
+    design and implementation". They are designed to test the efficacy of hand and bone outline
+    detection and whether these outlines could be helpful in bone age prediction. A range
+    of algorithms were applied to automatically extract the hand outlines of over 1300 images,
+    and three human evaluators labelled the output of the image outlining as correct or incorrect.
+
+    The data is described in detail in the paper   On the Segmentation and Classification
+    of Hand Radiographs (IJNS Vol. 22, No 5)'
+  donated_by: L. Davis, A. Bagnall
+  data_source_link: https://www.uea.ac.uk/computing/machine-learning/predictive-modelling-of-bone-ageing
+  second_link: http://www.worldscientific.com/doi/abs/10.1142/S0129065712500207
+original_problem:
+  description: >
+    The first stage of the same UEA bone-ageing pipeline: before any bone can be
+    staged, the hand itself must be segmented from the radiograph, and bad
+    segmentations must be caught. Bagnall & Davis (arXiv:1406.4781, Sec. 3)
+    describe the pipeline as "segment and verify hand outline; segment and verify
+    bones; use the bone outlines to construct models of age". The archive page
+    states that "A range of algorithms were applied to automatically extract the
+    hand outlines of over 1300 images, and three human evaluators labelled the
+    output of the image outlining as correct or incorrect", with the method
+    described in Davis et al., "On the Segmentation and Classification of Hand
+    Radiographs", Int. J. Neural Systems 22(5), 2012.
+  prediction_target: whether the automatically extracted hand outline was judged correct
+  input_as_originally_posed: plain radiograph of a child's non-dominant hand
+  task_family: image-classification
+  stakeholder_and_use: >
+    developers and users of an automated bone-ageing system, who need to reject
+    failed hand segmentations before downstream bone measurement
+  source: >
+    Davis et al., "On the Segmentation and Classification of
+    Hand Radiographs", International Journal of Neural Systems 22(5), 2012 -
+    NOT READ (World Scientific paywall; the UEA project page linked from the
+    archive no longer carries the project content). Pipeline context taken from
+    Bagnall & Davis, arXiv:1406.4781 (read), which covers the bone stage rather
+    than the hand-outline stage.
+  provenance_confidence: medium
+
+translation:
+  transformation: [contour-unrolling, resampling, z-normalization]
+  what_the_x_axis_is: arc-length
+  sampling: >
+    2709 points around the extracted hand outline. The exact mapping (reference
+    point, direction, resampling rule) is not stated on the archive page and the
+    IJNS paper describing it could not be reached.
+  information_lost_or_added: >
+    Bone structure and density inside the hand - the entire clinical content of a
+    radiograph - are discarded; only the silhouette of the hand remains. Absolute
+    hand size is removed by normalization.
+  label_semantics_changed: "yes: the label describes whether a segmentation algorithm succeeded, not a property of the patient"
+
+benchmark_task:
+  description: Classify a length-2709 hand-outline series as a correct or incorrect segmentation.
+  is_same_as_original: "yes"
+  # Same verification question posed inside the original pipeline.
+
+verdict: translated-modality
+verdict_rationale: >
+  A radiograph reduced to a hand silhouette traversed by arc-length; the source
+  modality is an image and the axis is spatial.
+known_issues:
+  - Primary description (IJNS 2012) is paywalled and was not read; the outline-to-series mapping is therefore unverified.
+  - 'Label is a judgement about an image-processing output, so the dataset measures a specific segmentation pipeline; a different segmentation method would produce a different dataset.'
+  - Three human evaluators labelled correctness; no adjudication rule or agreement statistic is exposed.
+  - Dau et al. (arXiv:1810.07758, Table I) list HandOutlines among fourteen datasets whose train/test split was reversed for the 2018 archive expansion, so pre- and post-2018 results are not comparable.
+  - Same ~1300 radiographs and subjects as the ten phalanx problems, so results are not independent of those datasets.
+  - At length 2709 it is one of the longest UCR series; much of that length is smooth silhouette with little discriminative content.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.9351
+    acc_permuted: 0.9081
+    drop: 0.027
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 7.4
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.9351
+    acc_raw_values: 0.9081
+    acc_summary_stats: 0.6865
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.027
+    gap_summary: 0.2486
+    seed: 0
+    runtime_s: 5.4
+    run: '2026-09-04'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=HandOutlines
+  - Bagnall & Davis, "Predictive Modelling of Bone Age through Classification and Regression of Bone Shapes", arXiv:1406.4781, 2014
+  - Davis et al., "On the Segmentation and Classification of Hand Radiographs", Int. J. Neural Systems 22(5), 2012 (paywalled, not read)
+  - Dau et al., "The UCR Time Series Archive", arXiv:1810.07758

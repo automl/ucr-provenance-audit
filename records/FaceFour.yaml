@@ -1,0 +1,86 @@
+name: FaceFour
+archive:
+- UCR
+archive_type_tag: IMAGE
+n_train: 24
+n_test: 88
+series_length: 350
+n_channels: 1
+n_classes: 4
+archive_page:
+  description: A Four class face outline problem, we are not sure of the exact provenance
+  donated_by: A. Ratanamahatana, E. Keogh
+  data_source_link: ''
+  second_link: ''
+original_problem:
+  description: >
+    A four-class face-outline problem of unclear origin. The archive page says
+    so in as many words: "A Four class face outline problem, we are not sure of
+    the exact provenance". It is one of the oldest datasets in the archive
+    (donated by Ratanamahatana and Keogh) and appears in the early
+    similarity-search literature - Xi et al. (ICML 2006) report a "Face (four)"
+    dataset of size 112, which matches this record's 24+88 instances - but no
+    source describing who collected the faces, or why, was found.
+  prediction_target: which of four face classes (individuals, presumably) an outline belongs to
+  input_as_originally_posed: image of a face/head, from which an outline was extracted
+  task_family: image-classification
+  stakeholder_and_use: none identified; used as a benchmark for time-series similarity measures
+  source: >
+    Archive page only, which explicitly disclaims knowledge of provenance. Xi et
+    al., "Fast time series classification using numerosity reduction", ICML 2006
+    (read) lists "Face (four)" with 112 instances but gives no description of the
+    data.
+  provenance_confidence: low
+
+translation:
+  transformation: [contour-unrolling, resampling, z-normalization]
+  what_the_x_axis_is: arc-length
+  sampling: 350 points along the face outline; the mapping is undocumented.
+  information_lost_or_added: >
+    Unverifiable in detail, since the source images are unknown; as with the
+    other face-outline datasets, everything except the silhouette is gone.
+  label_semantics_changed: "no"
+
+benchmark_task:
+  description: Classify a length-350 face-outline series into one of four classes.
+  is_same_as_original: "yes"
+  # Provisional: the archive disclaims knowledge of provenance, so whether the
+  # four classes are the labels of some original problem cannot be checked.
+
+verdict: translated-modality
+verdict_rationale: >
+  Despite the unknown provenance, the archive's own description makes the input a
+  face outline, i.e. an image mapped to an arc-length-indexed series.
+known_issues:
+  - 'Archive states outright: "we are not sure of the exact provenance". Nothing about collection, subjects or labelling is documented.'
+  - 24 train / 88 test - very small, and listed by Dau et al. (arXiv:1810.07758, Table II) among twelve "solved" datasets where at least one algorithm reaches 100% accuracy, so it carries little discriminative value as a benchmark.
+  - Whether the four classes are four individuals (and how many images per individual) is unverified, so a subject-identity shortcut cannot be ruled out.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.9886
+    acc_permuted: 0.7614
+    drop: 0.2273
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 4.6
+    run: '2026-09-03'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.9886
+    acc_raw_values: 0.1591
+    acc_summary_stats: 0.1591
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.8295
+    gap_summary: 0.8295
+    seed: 0
+    runtime_s: 2.8
+    run: '2026-09-03'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=FaceFour
+  - Dau et al., "The UCR Time Series Archive", arXiv:1810.07758
+  - Xi, Keogh, Shelton, Wei & Ratanamahatana, "Fast time series classification using numerosity reduction", ICML 2006 - https://www.cs.ucr.edu/~cshelton/papers/docs/icml06.pdf

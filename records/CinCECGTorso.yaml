@@ -1,0 +1,140 @@
+name: CinCECGTorso
+archive:
+- UCR
+archive_type_tag: ECG
+n_train: 40
+n_test: 1380
+series_length: 1639
+n_channels: 1
+n_classes: 4
+archive_page:
+  description: 'This data is derived from one of the Computers in Cardiology
+
+    challenges, an annual competition that runs with the conference
+
+    series of the same name and is hosted on physionet. Data is taken
+
+    from ECG data for multiple torso-surface sites. There are 4 classes
+
+    (4 different people).'
+  donated_by: ''
+  data_source_link: https://physionet.org/challenge/
+  second_link: ''
+original_problem:
+  description: >
+    The recordings come from a PhysioNet/Computers in Cardiology challenge on
+    body-surface potential mapping (BSPM). The challenge that matches the archive
+    description is the PhysioNet/CinC Challenge 2007, "Electrocardiographic
+    Imaging of Myocardial Infarction": clinicians wanted to estimate the size and
+    location of a myocardial infarct from dense torso-surface ECG, scored against
+    gadolinium-enhanced MRI as ground truth. The challenge page states the data
+    are "ECG data for 352 torso-surface sites ... for a single averaged PQRST
+    complex sampled at 2kHz", and that the organisers "selected two 'training'
+    cases and two 'test' cases, in each case with a moderate to large and
+    relatively compact infarct" - four cases in total, matching the archive's
+    four classes.
+  prediction_target: >
+    In the original challenge, infarct extent and location. In the archive
+    version the label is instead which of the four people the torso-surface
+    recording came from.
+  input_as_originally_posed: body-surface potential map (352-electrode torso ECG), one averaged PQRST complex
+  task_family: biometric-identification
+  stakeholder_and_use: cardiologists / non-invasive infarct localisation (electrocardiographic imaging)
+  source: >
+    PhysioNet/Computing in Cardiology Challenge 2007, "Electrocardiographic
+    Imaging of Myocardial Infarction" (https://moody-challenge.physionet.org/2007/),
+    read 2026-08. Challenge page: "The BSPM data, consisting of ECG data for 352
+    torso-surface sites, are provided in easy-to-read ASCII format for a single
+    averaged PQRST complex sampled at 2kHz."
+  provenance_confidence: medium
+  # The 2007 challenge page was read directly. The identification of *which* CinC
+  # challenge the archive means is an inference: the archive page says only "one of
+  # the Computers in Cardiology challenges" and "ECG data for multiple torso-surface
+  # sites ... 4 classes (4 different people)", which matches the 2007 challenge's
+  # 352 torso-surface sites and exactly four selected cases. No UCR document was
+  # found that names the challenge year, so this is not confirmed by the curators.
+
+translation:
+  transformation: [channel-selection, windowing, z-normalization]
+  what_the_x_axis_is: time
+  sampling: >
+    Original BSPM: one averaged PQRST complex per torso site at 2 kHz. The archive
+    series are length 1639 (about 0.8 s at 2 kHz), one series per torso-surface
+    site; 40 train + 1380 test = 1420 series over 4 people. Note 4 x 352 = 1408,
+    so the exact per-person site count in the archive version does not reconcile
+    with the challenge description and was not verified.
+  information_lost_or_added: >
+    The spatial structure that made the original problem solvable is destroyed:
+    electrocardiographic imaging inverts the *whole* 352-site map onto the heart,
+    whereas the archive presents each site as an independent univariate series
+    with no electrode-position metadata. Z-normalisation additionally removes the
+    per-site amplitude, which is precisely the quantity that encodes where on the
+    torso the electrode sat.
+  label_semantics_changed: >
+    yes: the challenge label was infarct extent/location, scored against MRI. The
+    archive label is the identity of the person the recording came from, a label
+    the curators derived from the case grouping rather than from any clinical
+    measurement.
+
+benchmark_task:
+  description: >
+    Given one length-1639 torso-surface ECG series, say which of four individuals
+    it was recorded from.
+  is_same_as_original: different-task
+
+verdict: native-tsc
+verdict_rationale: >
+  The signal is a genuine electrocardiogram with time on the x-axis, so by the
+  decision rule this is native TSC - but the benchmark asks a biometric identity
+  question, not the diagnostic question the data was collected to answer.
+known_issues:
+  - >
+    The class is person identity, so "identity shortcut" is not a confound here -
+    it is the entire task. Any inter-subject difference (heart orientation, torso
+    geometry, body habitus, recording session) is a legitimate solution.
+  - >
+    Train/test independence fails structurally: all 1420 series come from four
+    recording sessions, so every test series shares its person, session, equipment
+    and averaging procedure with training series of the same class. There is no
+    held-out subject and no held-out session.
+  - >
+    Series within one class are electrodes on the same torso at the same moment.
+    Neighbouring torso sites are strongly spatially correlated, so the effective
+    sample size is far below 1420 and the 40/1380 split does not give 1380
+    independent test items.
+  - >
+    The four challenge cases were chosen because they all had "a moderate to large
+    and relatively compact infarct", so all four subjects are infarct patients;
+    the dataset cannot say anything about normal hearts.
+  - >
+    Arithmetic mismatch: 4 people x 352 sites = 1408, but the archive ships 1420
+    series. The discrepancy is undocumented.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.8572
+    acc_permuted: 0.7877
+    drop: 0.0696
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 5.7
+    run: '2026-09-03'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.8572
+    acc_raw_values: 0.3754
+    acc_summary_stats: 0.3674
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.4819
+    gap_summary: 0.4899
+    seed: 0
+    runtime_s: 2.6
+    run: '2026-09-03'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=CinCECGTorso
+  - https://moody-challenge.physionet.org/2007/
+  - Dau et al., "The UCR Time Series Archive", arXiv:1810.07758 (Sec. III-C, p. 3, on archive-wide z-normalization)

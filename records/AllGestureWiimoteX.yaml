@@ -1,0 +1,147 @@
+name: AllGestureWiimoteX
+archive:
+- UCR
+archive_type_tag: HAR
+n_train: 300
+n_test: 700
+series_length: variable
+n_channels: 1
+n_classes: 10
+archive_page:
+  description: "The original data include 10 subjects, each perform 10 gestures 10 times.\
+    \ The gesture acquisition device is a Nintendo Wiimote remote controller with built-in\
+    \ three-axis accelerometer.  Each subject performs a set of gestures multiple times. Classes\
+    \ are based on gestures (see class labels below). Note that data are shuffled and randomly\
+    \ sampled so that instances across datasets are not sychronized by dimension or subject.\
+    \ Time series are of different lengths. There are no missing values. \n\nARFF files are\
+    \ padded with missing number indicator (the symbol ?).\n\nThe gestures are (class label.\
+    \ original label - English translation):\n\n\n \n\n  poteg: pick-up\n\n  shake: shake\n\
+    \n  desno: one move to the right\n\n  levo: one move to the left\n\n  gor: one move to\
+    \ up\n\n  dol: one move to down\n\n  kroglevo:  one left circle\n\n  krogdesn: one right\
+    \ circle\n\n  suneknot: one move toward the screen\n\n  sunekven: one move away from the\
+    \ screen\n \n\n\n This data is acceleration in x-axis dimension."
+  donated_by: J. Guna
+  data_source_link: ''
+  second_link: ''
+original_problem:
+  description: >
+    The recordings come from a biometrics study, not a gesture-vocabulary study:
+    Guna, Humar and Pogacnik built an implicit user-identification system in which
+    a person is recognised from the way they pick up or handle a Wiimote, aimed at
+    low-stakes login (e.g. multimedia services). Ten subjects each performed ten
+    gestures ten times with a Nintendo Wii remote's built-in three-axis
+    accelerometer (archive description page). The UCR data set re-uses those
+    recordings but re-labels them by *gesture* rather than by person: the ten
+    classes are the Slovenian-labelled gestures poteg (pick-up), shake, desno
+    (right), levo (left), gor (up), dol (down), kroglevo (left circle), krogdesn
+    (right circle), suneknot (toward the screen) and sunekven (away from the
+    screen).
+  prediction_target: which of ten hand gestures was performed with the Wiimote
+  input_as_originally_posed: >
+    three-axis acceleration from a hand-held Nintendo Wii remote, one recording per
+    gesture performance
+  task_family: activity-recognition
+  stakeholder_and_use: >
+    gesture-driven interfaces for consumer devices; the source study's own use case
+    was implicit user identification for logging in to multimedia services
+  source: >
+    Guna, Humar, Pogacnik, "Intuitive gesture based user identification system",
+    35th Int. Conf. on Telecommunications and Signal Processing (TSP), IEEE 2012.
+    Full text NOT READ - the paper is closed access (OpenAlex reports
+    oa_status "closed", no repository copy). I read its abstract in full via the
+    OpenAlex API: "We present an intuitive and very easy to use implicit gesture
+    based identification system that is especially suited for security-wise
+    non-critical applications, such as the user login in the multimedia services.
+    The term 'implicit gesture' in our work refers to a natural physical hand
+    manipulation performed by the user who takes hold of the control device and
+    simply picks it up from its neutral motionless position - a 'pick-up'
+    gesture... 100% recognition accuracy was achieved when using explicit
+    identification signature gestures and over 91% recognition accuracy was
+    achieved when using the implicit 'pick-up' gesture."
+  provenance_confidence: medium
+translation:
+  transformation: [channel-selection]
+  what_the_x_axis_is: time
+  sampling: >
+    Wii remote built-in three-axis accelerometer; only the x-axis channel is
+    released here and series keep their natural, variable length (padded with NaN /
+    "?" to the longest series for storage). Neither the archive page nor the
+    reachable source material states the sampling rate; the same hardware is
+    reported at 100 Hz by Liu et al. 2009 (Sec. IV, p. 4) for the uWave data, which
+    is suggestive but not documented for this collection.
+  information_lost_or_added: >
+    Two of three accelerometer axes are dropped, and because the instances were
+    shuffled and subsampled independently per axis, the multivariate recording
+    cannot be reconstructed. Subject identity - the source study's actual label - is
+    not released.
+  label_semantics_changed: >
+    yes: the source study's target was the identity of the user performing the
+    gesture (implicit biometric login); the archive keeps the recordings but labels
+    them by gesture class instead.
+benchmark_task:
+  description: >
+    Classify a variable-length single-axis Wiimote acceleration series into one of
+    ten gesture classes.
+  is_same_as_original: different-task
+verdict: native-tsc
+verdict_rationale: >
+  Real hand-held accelerometer recordings with time as the x-axis; only channel
+  selection and NaN padding were applied, so the data are natively temporal even
+  though the labels were swapped from user identity to gesture.
+known_issues:
+  - >
+    Label semantics are the archive's, not the source study's: the same recordings
+    are used with subject labels in PickupGestureWiimoteZ and ShakeGestureWiimoteZ.
+    Those two data sets and these three overlap in raw material, so results are not
+    independent across the five Wiimote data sets.
+  - >
+    The three axis data sets cannot be recombined into the multivariate problem:
+    archive description, "Note that data are shuffled and randomly sampled so that
+    instances across datasets are not sychronized by dimension or subject". No
+    multivariate version of this data exists in UEA.
+  - >
+    Variable-length series. The archive pads: "ARFF files are padded with missing
+    number indicator (the symbol ?)" (description page) and the text files are
+    NaN-padded to the length of the longest series. UCR briefing Sec. VI-C-2, p. 9:
+    "we pad enough NaNs to the end of each time series, to make it the same length
+    of the longest time series... We deliberately refrain from offering any advice
+    on how to best do this." Padding choice is therefore part of the benchmark and
+    differs between users.
+  - >
+    Ten subjects, 1000 recordings, split 300/700 at random with no subject id in the
+    released files, so the same ten people are in train and test: identity shortcut,
+    and no way to test generalisation to a new user.
+  - >
+    Primary source closed access (abstract only) - provenance_confidence capped at
+    medium.
+  - >
+    archive_type_tag: recorded here as HAR (site aggregate table); the archive's own
+    DataSummary.csv files the Wiimote data sets under "Sensor".
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.7357
+    acc_permuted: 0.5343
+    drop: 0.2014
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 6.1
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.7357
+    acc_raw_values: 0.4557
+    acc_summary_stats: 0.5229
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.28
+    gap_summary: 0.2129
+    seed: 0
+    runtime_s: 5.8
+    run: '2026-09-04'
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=AllGestureWiimoteX
+  - Guna, Humar, Pogacnik, "Intuitive gesture based user identification system", TSP 2012 - closed access, abstract read via https://api.openalex.org/works?search=Intuitive+gesture+based+user+identification+system
+  - Dau, Bagnall, Kamgar, Yeh, Zhu, Gharghabi, Ratanamahatana, Keogh, "The UCR Time Series Archive", arXiv:1810.07758 (PDF read)
+  - UCR archive DataSummary.csv (baseline error rates and archive type tags), cached at scripts/sources/ucr_DataSummary.csv

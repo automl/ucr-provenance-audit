@@ -1,0 +1,141 @@
+name: ECG5000
+archive:
+- UCR
+archive_type_tag: ECG
+n_train: 500
+n_test: 4500
+series_length: 140
+n_channels: 1
+n_classes: 5
+archive_page:
+  description: 'The original dataset for "ECG5000" is a 20-hour long ECG downloaded from Physionet.
+    The name is BIDMC Congestive Heart Failure Database(chfdb) and it is record "chf07". It
+    was originally published in "Goldberger AL, Amaral LAN, Glass L, Hausdorff JM, Ivanov
+    PCh, Mark RG, Mietus JE, Moody GB, Peng C-K, Stanley HE. PhysioBank, PhysioToolkit, and
+    PhysioNet: Components of a New Research Resource for Complex Physiologic Signals. Circulation
+    101(23)". The data was pre-processed in two steps: (1) extract each heartbeat, (2) make
+    each heartbeat equal length using interpolation. This dataset was originally used in paper
+    "A general framework for never-ending learning from time series streams", DAMI 29(6).
+    After that, 5,000 heartbeats were randomly selected. The patient has severe congestive
+    heart failure and the class values were obtained by automated annotation'
+  donated_by: Y. Chen , E. Keogh
+  data_source_link: http://physionet.org/cgi-bin/atm/ATM
+  second_link: http://dl.acm.org/citation.cfm?id=2833467
+original_problem:
+  description: >
+    There is no original *prediction problem* behind this dataset. The archive page
+    states the source is "a 20-hour long ECG downloaded from Physionet ... the BIDMC
+    Congestive Heart Failure Database (chfdb) ... record chf07", a research recording
+    of one patient with severe congestive heart failure, published as part of the
+    PhysioBank resource (Goldberger et al., Circulation 101(23), 2000). The
+    classification problem was constructed afterwards by the UCR curators, who
+    extracted individual heartbeats and, in their own words, obtained the class
+    values "by automated annotation".
+  prediction_target: >
+    Heartbeat type, as assigned by an automatic annotator. Secondary sources
+    (aeon/tslearn documentation, dataset mirrors) name the five classes as normal,
+    R-on-T premature ventricular contraction, premature ventricular contraction,
+    supraventricular premature/ectopic beat and unclassifiable beat; the archive
+    page itself does not list them, and the naming was not confirmed against a
+    primary source.
+  input_as_originally_posed: single-lead ambulatory ECG of a congestive-heart-failure patient
+  task_family: clinical-diagnosis
+  stakeholder_and_use: >
+    Cardiology / arrhythmia monitoring in principle; in practice the dataset was
+    assembled as a benchmark for streaming time-series algorithms, not for a
+    clinical decision.
+  source: >
+    Archive page (timeseriesclassification.com), which cites Goldberger et al.,
+    "PhysioBank, PhysioToolkit, and PhysioNet", Circulation 101(23), 2000 for the
+    recording and Hu, Chen & Keogh, "A general framework for never-ending learning
+    from time series streams", Data Mining and Knowledge Discovery 29(6), 2015 for
+    the first use. Neither primary paper was reached in full text for this record.
+  provenance_confidence: medium
+  # The chain of custody (chfdb/chf07 -> beat extraction -> interpolation ->
+  # automated labels -> 5000 random beats) is stated explicitly and consistently on
+  # the archive page, which is why this is not `low`; but the DAMI 2015 paper that
+  # would document *which* automatic annotator produced the labels was not read.
+
+translation:
+  transformation: [windowing, resampling, z-normalization]
+  what_the_x_axis_is: time
+  sampling: >
+    Continuous ambulatory ECG cut into individual heartbeats, each interpolated to
+    140 samples; 5000 beats were then sampled at random from the 20-hour record.
+    The original sampling rate of chfdb is not restated on the archive page, so the
+    real-time duration of one 140-point series is not documented there.
+  information_lost_or_added: >
+    Two things are added rather than lost. (1) Length normalisation by interpolation
+    removes beat duration - the RR interval and the beat's own width are exactly the
+    features a cardiologist uses to separate a premature ventricular contraction
+    from a normal beat, and interpolation to a common length rescales them away.
+    (2) Random sampling of 5000 beats destroys beat order, so rhythm context
+    (which is what "R-on-T" and "premature" mean) is unavailable at inference time
+    even though it was available to whatever annotator produced the labels.
+  label_semantics_changed: >
+    yes: the labels are not clinician annotations of this record. They were produced
+    by an automated annotation procedure applied by the curators, so the target is
+    "what an annotation algorithm called this beat", not "what this beat is".
+
+benchmark_task:
+  description: >
+    Classify a single length-140 interpolated heartbeat into one of five
+    automatically assigned beat types.
+  is_same_as_original: different-task
+
+verdict: native-tsc
+verdict_rationale: >
+  A real electrocardiogram with time on the x-axis, windowed into beats; the
+  modality is native even though the labels and the task were manufactured by the
+  curators after the fact.
+known_issues:
+  - >
+    Labels are algorithmic, not clinical. The archive page says plainly "the class
+    values were obtained by automated annotation". A classifier that scores well is
+    reproducing an annotation program, and its ceiling is that program's accuracy,
+    not clinical truth. This is the first-order limitation of the dataset.
+  - >
+    All 5000 beats come from ONE patient (chfdb record chf07). Train and test are
+    random beats from the same recording of the same heart, so nothing about
+    between-patient generalisation is measured; a nearest-neighbour classifier can
+    in principle match a test beat to an adjacent beat from the same minute.
+  - >
+    That patient "has severe congestive heart failure", so the "normal" class means
+    normal-for-this-diseased-heart, and the morphology distribution is not
+    representative of any population.
+  - >
+    Interpolation to a fixed length of 140 removes beat duration and RR interval,
+    which are the defining features of several of the five classes.
+  - >
+    The class distribution is strongly imbalanced (the normal class dominates), so
+    accuracy is a poor metric here; check per-class scores.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.9451
+    acc_permuted: 0.94
+    drop: 0.0051
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 6.6
+    run: '2026-09-03'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.9451
+    acc_raw_values: 0.9347
+    acc_summary_stats: 0.9118
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.0104
+    gap_summary: 0.0333
+    seed: 0
+    runtime_s: 4.2
+    run: '2026-09-03'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=ECG5000
+  - Goldberger et al., "PhysioBank, PhysioToolkit, and PhysioNet", Circulation 101(23), 2000 (cited by the archive page; not read)
+  - Hu, Chen & Keogh, "A general framework for never-ending learning from time series streams", DAMI 29(6), 2015 (cited by the archive page; not read)
+  - Dau et al., "The UCR Time Series Archive", arXiv:1810.07758 (Sec. III-C, p. 3, on archive-wide z-normalization)

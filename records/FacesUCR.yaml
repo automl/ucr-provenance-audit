@@ -1,0 +1,88 @@
+name: FacesUCR
+archive:
+- UCR
+archive_type_tag: IMAGE
+n_train: 200
+n_test: 2050
+series_length: 131
+n_channels: 1
+n_classes: 14
+archive_page:
+  description: FacesAll is rotationally aligned version of FaceAll with a different train/test
+    split
+  donated_by: X. Xi, E. Keogh
+  data_source_link: ''
+  second_link: ''
+original_problem:
+  description: >
+    The same 14-subject head-profile collection as FaceAll, re-processed.
+    Archive page: "FacesAll is rotationally aligned version of FaceAll with a
+    different train/test split"; FaceAll's page records that it "was generated at
+    UCR by Xiaopeng Xi. The faces belong to 14 grad students. Each facial outline
+    is mapped onto a one dimensional series." The UCR briefing document (Dau et
+    al., arXiv:1810.07758) names FacesUCR among the datasets made simply because
+    "with an inexpensive scanner or a camera, it was possible to create many
+    image-derived datasets". No applied problem statement was found.
+  prediction_target: which of 14 individuals the head profile belongs to
+  input_as_originally_posed: photograph of a graduate student's head, from which the profile outline was extracted
+  task_family: image-classification
+  stakeholder_and_use: none applied; created as a research benchmark
+  source: >
+    Archive page only (donated by X. Xi and E. Keogh; no data_source_link or
+    second_link). No primary publication describing the collection was located.
+  provenance_confidence: low
+
+translation:
+  transformation: [contour-unrolling, resampling, z-normalization]
+  what_the_x_axis_is: arc-length
+  sampling: >
+    131 points along the head profile, with an additional rotational alignment
+    step relative to FaceAll (the alignment procedure is not documented).
+  information_lost_or_added: >
+    As FaceAll - only the silhouette survives - plus the rotational alignment,
+    which removes the arbitrary starting phase of the unrolling and so makes the
+    problem easier in a way that has no counterpart in the imaging process.
+  label_semantics_changed: "no"
+
+benchmark_task:
+  description: Classify a length-131 rotationally aligned head-profile series as one of 14 individuals.
+  is_same_as_original: "yes"
+
+verdict: translated-modality
+verdict_rationale: >
+  A photographed head reduced to an aligned profile outline traversed by
+  arc-length; source modality is an image and the axis is spatial.
+known_issues:
+  - 'Same instances as FaceAll (200+2050 = 560+1690 = 2250); only the alignment and the split differ, so the two datasets are not independent benchmarks and archive-wide averages double-count them.'
+  - 'Train set is only 200 against a 2050-instance test set, the opposite balance from FaceAll: the pair should not be read as a like-for-like comparison of alignment.'
+  - Only 14 subjects with many images each; near-duplicate images of the same person span the split.
+  - No primary source; provenance rests on the archive page alone.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.9605
+    acc_permuted: 0.7746
+    drop: 0.1859
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 6.3
+    run: '2026-09-03'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.9605
+    acc_raw_values: 0.7429
+    acc_summary_stats: 0.5132
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.2176
+    gap_summary: 0.4473
+    seed: 0
+    runtime_s: 4.8
+    run: '2026-09-03'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=FacesUCR
+  - https://www.timeseriesclassification.com/description.php?Dataset=FaceAll
+  - Dau et al., "The UCR Time Series Archive", arXiv:1810.07758

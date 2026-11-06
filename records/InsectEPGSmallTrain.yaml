@@ -1,0 +1,148 @@
+name: InsectEPGSmallTrain
+archive:
+- UCR
+archive_type_tag: EPG
+n_train: 17
+n_test: 249
+series_length: 601
+n_channels: 1
+n_classes: 3
+archive_page:
+  description: 'The electrical penetration graph or EPG is a system used by biologists to
+    study the interaction of insects with plants. EPG data capture voltage changes of the
+    electrical circuit that connects insects and their food source.  We make two datasets
+    out of these data. The two datasets share a same test set and only differ in the number
+    of training instances.  There is nothing to infer from the order of examples in the train
+    and test set.  Original data created by Willett DS, George J, Willett NS Stelinski LL,
+    Lapointe SL (see [1]. Edited by Eamonn Keogh and Shaghayegh Gharghabi.  [1] Willett DS,
+    George J, Willett NS, Stelinski LL, Lapointe SL (2016) Machine Learning for Characterization
+    of Insect Vector Feeding. PLOS Computational Biology 12(11): e1005158.'
+  donated_by: E. Keogh, S. Gharghabi
+  data_source_link: https://datadryad.org//resource/doi:10.5061/dryad.4931c
+  second_link: ''
+original_problem:
+  description: >
+    Agricultural entomology. The Asian citrus psyllid (Diaphorina citri) transmits
+    Candidatus Liberibacter asiaticus, the bacterium causing citrus greening
+    (huanglongbing); Willett et al. note that "Citrus trees infected with this
+    pathogen rapidly develop debilitating symptoms affecting tree health and fruit
+    quality; the pathogen kills the tree within three to five years." Electrical
+    penetration graph (EPG) monitoring wires the insect and the plant into a circuit
+    and records voltage changes as the insect's stylet probes the plant, giving "a
+    potentially powerful tool to describe the cryptic behavior of the mouthparts of
+    fluid-feeding phytophagous insects inside a host plant". Reading these recordings
+    by hand is the bottleneck in screening citrus varieties for resistance, so the
+    authors set out to automate the classification of feeding behaviour.
+  prediction_target: >
+    Insect feeding behaviour state. The source study used six established waveform
+    states - C (stylet passage), D (first phloem contact), E1 (phloem salivation),
+    E2 (phloem ingestion), G (xylem ingestion) and NP (no probing). The UCR version
+    keeps 3 classes; which three, and how they map onto the six, is not documented
+    on the archive page.
+  input_as_originally_posed: EPG voltage trace of an insect-plant electrical circuit during feeding
+  task_family: animal-behaviour
+  # `other` = animal-behaviour sensing / agricultural entomology. None of the
+  # existing values fits: it is not human activity, not a clinical signal, not a
+  # device trace. The nearest analogue in spirit is `activity-recognition`, but that
+  # value is defined as human motion. Reported as a vocabulary gap.
+  stakeholder_and_use: >
+    Citrus growers and plant-breeding programmes screening cultivars for resistance
+    to psyllid feeding, and entomologists studying pathogen transmission.
+  source: >
+    Willett DS, George J, Willett NS, Stelinski LL, Lapointe SL, "Machine Learning
+    for Characterization of Insect Vector Feeding", PLoS Computational Biology
+    12(11): e1005158, 2016. Read 2026-08 via the PLOS article page. Labels: "Waveforms
+    were classified by visual inspection by a trained expert according to previous
+    reports", assigned second-by-second across roughly 470 hours of recordings from
+    nine citrus varieties. Underlying data: Dryad, doi:10.5061/dryad.4931c, "Labelled
+    EPG data from recordings of Asian Citrus Psyllid (Diaphorina citri) feeding on
+    citrus cultivars".
+  provenance_confidence: high
+  # The source study and the deposited data are both confirmed. What remains
+  # unconfirmed is UCR's own reduction of it (which 3 of the 6 states, what sampling
+  # rate, how windows were cut) - see known_issues.
+
+translation:
+  transformation: [windowing, z-normalization]
+  what_the_x_axis_is: time
+  sampling: >
+    Fixed-length windows of 601 samples cut from continuous EPG recordings. The
+    sampling rate is not stated on the archive page and was not found in the sources
+    reached, so the real-time duration of one series is undocumented.
+  information_lost_or_added: >
+    In the original analysis the labels are second-by-second annotations of a
+    continuous recording, and the diagnostic value of EPG comes largely from the
+    *sequence* of states (probing, then phloem contact, then ingestion) and their
+    durations. Cutting fixed 601-point windows and shuffling them into a train/test
+    pool removes the ordering and the duration of a behavioural episode, leaving only
+    within-window waveform texture.
+  label_semantics_changed: >
+    yes: only in that the six expert-annotated waveform states were collapsed to
+    three by the curators; the surviving labels are still the study's expert
+    annotations.
+
+benchmark_task:
+  description: >
+    Classify a length-601 EPG voltage window into one of 3 insect-feeding-behaviour
+    classes. 17 train / 249 test.
+  is_same_as_original: narrowed
+
+verdict: native-tsc
+verdict_rationale: >
+  A voltage signal sampled over time, and the labels are the original study's own
+  expert behaviour annotations; only the class set and the temporal context were
+  reduced.
+known_issues:
+  - >
+    InsectEPGRegularTrain and InsectEPGSmallTrain share an identical test set (249
+    instances) and differ only in training-set size (62 vs 17). This record is the small-training-set variant: 17 training instances for 3 classes, so roughly five or six examples per class. They are two
+    views of one dataset: reporting both in an aggregate over the archive
+    double-counts this data, and a paired significance test across datasets treating
+    them as independent is invalid.
+  - >
+    Windows are cut from a small number of long continuous recordings of individual
+    insects, so windows in the training and test sets can come from the same insect
+    on the same plant minutes apart. Train/test independence is questionable, and no
+    insect or recording identifier ships with the data to check it.
+  - >
+    The source study defines six waveform states; the archive uses three and does not
+    say which. A result here cannot be mapped back onto the entomological problem
+    until that mapping is recovered.
+  - >
+    Labels are expert visual annotations ("classified by visual inspection by a
+    trained expert"). That is the field standard, but it means the ceiling is
+    inter-expert agreement, not ground truth.
+  - >
+    Sampling rate undocumented in the archive, so window length cannot be interpreted
+    as a behavioural duration.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.992
+    acc_permuted: 1.0
+    drop: -0.008
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 5.2
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.992
+    acc_raw_values: 0.4739
+    acc_summary_stats: 0.4739
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.5181
+    gap_summary: 0.5181
+    seed: 0
+    runtime_s: 2.8
+    run: '2026-09-04'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=InsectEPGSmallTrain
+  - https://www.timeseriesclassification.com/description.php?Dataset=InsectEPGRegularTrain
+  - Willett DS, George J, Willett NS, Stelinski LL, Lapointe SL (2016), "Machine Learning for Characterization of Insect Vector Feeding", PLoS Computational Biology 12(11):e1005158
+  - https://datadryad.org/dataset/doi:10.5061/dryad.4931c
+  - Dau et al., "The UCR Time Series Archive", arXiv:1810.07758 (Sec. III-C, p. 3)

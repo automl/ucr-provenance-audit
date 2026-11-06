@@ -1,0 +1,114 @@
+name: OliveOil
+archive:
+- UCR
+archive_type_tag: SPECTRO
+n_train: 30
+n_test: 30
+series_length: 570
+n_channels: 1
+n_classes: 4
+archive_page:
+  description: 'Food spectrographs are used in chemometrics to classify food types,
+
+    a task that has obvious applications in food safety and quality
+
+    assurance. Each class of this data set is an extra virgin olive oil
+
+    from alternative countries.
+
+
+    Further information can be found in the original
+
+    paper  FTIR spectroscopy and multivariate analysis can distinguish the geographic origin
+    of extra virgin olive oils . The data was first used in the time series
+
+    classification literature in   Transformation Based Ensembles for Time Series Classification'
+  donated_by: K. Kemsley, A. Bagnall
+  data_source_link: http://www.ncbi.nlm.nih.gov/pubmed/14518931
+  second_link: https://archive.uea.ac.uk/~ajb/Papers/BagnallSDM2012.pdf
+original_problem:
+  description: >
+    A geographic-origin authentication study at the Institute of Food Research,
+    Norwich: can FTIR spectroscopy plus multivariate analysis tell extra virgin
+    olive oils of different producing countries apart? Abstract (J. Agric. Food
+    Chem. 51:6110-6115, 2003, read via Europe PMC): "This work investigates
+    whether Fourier transform infrared spectroscopy (FTIR), in combination with
+    multivariate analysis, can distinguish extra virgin olive oils from
+    different producing countries. Duplicate spectra were collected from 60
+    oils from four European countries." The authors report 96-100% cross-
+    validated success and note the method "has the required discriminatory
+    power to potentially offer a 'black box' method of screening oils to verify
+    their country of origin" - protected-designation-of-origin fraud is the
+    practical driver.
+  prediction_target: country of origin of an extra virgin olive oil (4 European countries)
+  input_as_originally_posed: mid-infrared FTIR-ATR spectrum of an olive-oil sample
+  task_family: spectroscopy
+  stakeholder_and_use: food-authenticity labs and PDO/origin-labelling regulators
+  source: >
+    Tapp, Defernez, Kemsley, "FTIR spectroscopy and multivariate analysis can
+    distinguish the geographic origin of extra virgin olive oils", J. Agric.
+    Food Chem. 51(21), 6110-6115, 2003, doi:10.1021/jf030232s. Abstract read
+    via the Europe PMC REST API; full text paywalled. The donor's own page,
+    IFR Analytical Sciences "Example Datasets for Download", describes the
+    release: "120 Mid-infrared (MIR) spectra. Duplicate acquisitions from 60
+    authenticated extra virgin olive oils from 4 different countries of origin;
+    raw data matrix size [570 x 120]." The 570 matches the archive's series
+    length exactly.
+  provenance_confidence: high
+
+translation:
+  transformation: [spectrum-as-series]
+  what_the_x_axis_is: wavelength
+  sampling: 570 absorbance values on the FTIR-ATR mid-IR wavenumber grid
+  information_lost_or_added: >
+    The archive ships 60 spectra where the donor's page offers 120; half the
+    source matrix is absent and the archive does not say which half. Otherwise
+    nothing structural: the ordering is a wavenumber axis, and the source
+    paper's best model was a genetic-algorithm selection of just eight
+    wavenumbers fed to LDA - an order-invariant, eight-feature tabular model.
+  label_semantics_changed: "no"
+
+benchmark_task:
+  description: Classify a univariate length-570 mid-IR spectrum into one of four countries of origin.
+  is_same_as_original: "yes"
+  # Same four-country discrimination question, same measurement values.
+
+verdict: ordered-not-temporal
+verdict_rationale: >
+  The task is the chemists' own country-of-origin problem, but the ordered
+  axis is FTIR wavenumber, so this is functional/chemometric data rather than
+  a time series.
+known_issues:
+  - 'The source release has 120 spectra (duplicate acquisitions from 60 oils); the archive ships only 60, and it is undocumented whether these are one spectrum per oil or both replicates of 30 oils. A nearest-neighbour check on the shipped data found no clear replicate pairing across the split (median nearest/second-nearest distance ratio 0.89), which weakly favours one spectrum per oil.'
+  - 'Severe class imbalance and a tiny test set: test class counts are 5 / 9 / 4 / 12. With four test cases in the smallest class, per-class results are noise.'
+  - 'The source paper''s own conclusion is that eight selected wavenumbers suffice for 100% cross-validated accuracy, i.e. the problem is a small tabular one; strong TSC results here should not be read as evidence about sequence modelling.'
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.9333
+    acc_permuted: 0.8667
+    drop: 0.0667
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 5.0
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.9333
+    acc_raw_values: 0.4
+    acc_summary_stats: 0.4
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.5333
+    gap_summary: 0.5333
+    seed: 0
+    runtime_s: 2.8
+    run: '2026-09-04'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=OliveOil
+  - 'Tapp, Defernez, Kemsley, J. Agric. Food Chem. 51(21):6110-6115, 2003, doi:10.1021/jf030232s (abstract, via Europe PMC REST API)'
+  - 'Bagnall, Davis, Hills, Lines, "Transformation Based Ensembles for Time Series Classification", SDM 2012, Sec. 3.1 (https://archive.uea.ac.uk/~ajb/Papers/BagnallSDM2012.pdf)'
+  - 'IFR Analytical Sciences, "Example Datasets for Download" (http://asu.ifr.ac.uk/example-datasets-for-download/, via the Internet Archive)'

@@ -1,0 +1,162 @@
+name: MoteStrain
+archive:
+- UCR
+archive_type_tag: SENSOR
+n_train: 20
+n_test: 1252
+series_length: 84
+n_channels: 1
+n_classes: 2
+archive_page:
+  description: "Sensor data originally from Carlos Guestrin (CMU) the subsequently used in\
+    \ the paper\n Online Latent Variable Detection in Sensor Networks  and\nformatted for\
+    \ classification by Eamonn Keogh. The task is to\ndistinguish between sensor q8calibHumid\
+    \ (a humidity measure) and\nsensor q8calibHumTemp (temperature). The data has dropouts.\
+    \ In the\noriginal data the dropouts have value 0. This means they are\ndifficult to detect\
+    \ with normalised data."
+  donated_by: C. Guestrin , J. Sun
+  data_source_link: http://dl.acm.org/citation.cfm?id=1054156
+  second_link: https://github.com/MrKriss/CDST-demo/tree/master/datasets/Motes
+original_problem:
+  description: >
+    There is no original classification problem. The underlying data are
+    calibrated measurement streams from a wireless sensor-mote deployment run by
+    Carlos Guestrin's group at CMU, packaged by Jimeng Sun and Christos
+    Faloutsos as a testbed for streaming latent-variable / correlation tracking
+    (their ICDE 2005 demo system SPIRIT-style). Those studies were unsupervised:
+    they wanted to track correlations among co-evolving sensor streams online,
+    not to label anything. Eamonn Keogh later "formatted for classification" by
+    taking windows from two of the released streams and using the stream's
+    identity as the class: humidity (q8calibHumid) vs temperature
+    (q8calibHumTemp).
+  prediction_target: >
+    which sensing modality/stream a window came from — humidity
+    (q8calibHumid) or temperature (q8calibHumTemp)
+  input_as_originally_posed: >
+    calibrated readings from wireless motes (MICA2-class boards with multiple
+    sensing modalities), logged as a matrix of timestamps x sensors
+  task_family: device-monitoring
+  # The label is sensor identity, which is what `device-monitoring`
+  # ("identify device or state") covers, even though the deployment itself was
+  # environmental monitoring.
+  stakeholder_and_use: >
+    none in the applied sense — nobody needs a model to tell a humidity sensor
+    from a thermometer, since the sensor is known at read time. The realistic
+    use is diagnostic (detecting mislabelled or miswired channels in a sensor
+    network).
+  source: >
+    timeseriesclassification.com description page (quoted verbatim in
+    `archive_page.description` above): "Sensor data originally from Carlos
+    Guestrin (CMU) the subsequently used in the paper Online Latent Variable
+    Detection in Sensor Networks and formatted for classification by Eamonn
+    Keogh. The task is to distinguish between sensor q8calibHumid (a humidity
+    measure) and sensor q8calibHumTemp (temperature). The data has dropouts. In
+    the original data the dropouts have value 0. This means they are difficult
+    to detect with normalised data." The linked paper — Sun, Papadimitriou &
+    Faloutsos, "Online Latent Variable Detection in Sensor Networks", ICDE 2005
+    (demo, pp. 1126-1127) — was read in full; it describes the system and says
+    the demo data source "consists of 8 sensor streams, 4 temperature streams
+    and 4 light intensity streams" from "MICA2 wireless motes with MTS310 sensor
+    boards", and does NOT mention humidity streams or the q8calib* files. The
+    named files instead appear in the archive's second link
+    (github.com/MrKriss/CDST-demo/tree/master/datasets/Motes), whose README I
+    read: "q8calibHumid.dat - humidity measurements / q8calibHumTemp.dat -
+    temperature measurements ... These datasets are produced by Jimeng Sun and
+    Christos Faloutsos (CMU). The original data are provided by Carlos Guestrin
+    (CMU)."
+  provenance_confidence: medium
+  # The data's lineage (Guestrin -> Sun/Faloutsos -> Keogh) is corroborated by a
+  # README I read, but the specific paper the archive cites does not describe
+  # these streams, and no source documents the deployment, sampling rate, number
+  # of motes, or how windows were cut. That gap keeps this below `high`.
+
+translation:
+  transformation: [windowing, z-normalization]
+  what_the_x_axis_is: time
+  sampling: >
+    Consecutive readings from a mote log, cut into windows of 84 points. The
+    logging interval is not documented in any source I could reach, so the
+    physical duration of an instance is unknown.
+  information_lost_or_added: >
+    Windowing severs each 84-point instance from its context, so slow diurnal
+    trends — the very thing that distinguishes a temperature record from a
+    humidity record at long range — are largely removed. Z-normalization then
+    removes the absolute level and scale, which is what makes the two modalities
+    trivially separable in raw units; the archive explicitly warns that it also
+    hides the dropouts, which are coded as 0 in the raw data and become
+    arbitrary values after normalization.
+  label_semantics_changed: >
+    yes: the label is the identity of the source stream, assigned by the curator
+    from the file the window was cut out of, not a property anyone observed or
+    wanted to predict.
+
+benchmark_task:
+  description: >
+    Given a length-84 z-normalized sensor window, decide whether it came from
+    the humidity stream or the temperature stream.
+  is_same_as_original: different-task
+  # The source work was unsupervised correlation tracking; the classification
+  # task is entirely a curator construction.
+
+verdict: native-tsc
+verdict_rationale: >
+  The values are consecutive environmental sensor readings indexed by time, so
+  the series axis is genuine time even though the labels are curator-assigned
+  stream identities.
+known_issues:
+  - >
+    Curator-derived labels: the class is which file the window came from. The
+    task is source identification, not a question anyone in the domain asks.
+  - >
+    Windowed slices of (at most) two long recordings, so train and test windows
+    are neighbouring segments of the same streams. Train/test independence is
+    weak at best, and any classifier can in principle exploit slow drift shared
+    between nearby windows.
+  - >
+    Extreme identity shortcut: with only two source streams, "class" and
+    "recording" are the same variable. There is no within-class variation across
+    devices, days, or deployments to generalize over.
+  - >
+    Dropouts are coded as 0 in the raw data; after z-normalization they become
+    an artefact whose value depends on the rest of the window. The archive flags
+    this, and it is plausibly a strong shortcut feature if the two streams drop
+    out at different rates.
+  - >
+    Tiny training set (20) against 1252 test instances.
+  - >
+    The archive's cited paper (Sun et al., ICDE 2005) does not describe the
+    humidity/temperature streams it is credited with; provenance is stitched
+    together from a GitHub README.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.9265
+    acc_permuted: 0.8842
+    drop: 0.0423
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 5.4
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.9265
+    acc_raw_values: 0.5391
+    acc_summary_stats: 0.5391
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.3874
+    gap_summary: 0.3874
+    seed: 0
+    runtime_s: 2.8
+    run: '2026-09-04'
+
+references:
+- https://www.timeseriesclassification.com/description.php?Dataset=MoteStrain
+- >
+  Sun, Papadimitriou & Faloutsos, "Online Latent Variable Detection in Sensor
+  Networks", ICDE 2005 (demo), pp. 1126-1127;
+  https://www.cs.cmu.edu/~jimeng/papers/ICDE05demo.pdf
+- https://github.com/MrKriss/CDST-demo/tree/master/datasets/Motes (README read)
+- Dau et al., "The UCR Time Series Archive", arXiv:1810.07758

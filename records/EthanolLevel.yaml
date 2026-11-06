@@ -1,0 +1,122 @@
+name: EthanolLevel
+archive:
+- UCR
+archive_type_tag: SPECTRO
+n_train: 504
+n_test: 500
+series_length: 1751
+n_channels: 1
+n_classes: 4
+archive_page:
+  description: 'This dataset is part of the project with Scotch Whisky Research Institute
+    into detecting forged spirits in a non-intrusive manner. One way of detecting forgery
+    without sampling the wine is through inspecting ethanol level by spectrograph.  The dataset
+    covers 20 different bottle types and four levels of alcohol: 35%, 38%, 40% and 45%. Each
+    series is a spectrograph of 1751 observations.  This dataset is an example of when it
+    is wrong to merge and resample, because the train/test split are constructed so that the
+    same bottle type is never in both train and test sets.  There are 4 classes.  - Class
+    1: E35 - Class 2: E38 - Class 3: E40 - Class 4: E45  For more information about this dataset,
+    see [1,2].  [1] Lines, Jason, Sarah Taylor, and Anthony Bagnall. "Hive-cote: The hierarchical
+    vote collective of transformation-based ensembles for time series classification." Data
+    Mining (ICDM), 2016 IEEE 16th International Conference on. IEEE, 2016. [2] J. Large, E.
+    K. Kemsley, N.Wellner, I. Goodall, and A. Bagnall, Detecting forged alcohol non-invasively
+    through vibrational spectroscopy and machine learning," in Pacific-Asia Conference on
+    Knowledge Discovery and Data Mining, 2018.'
+  donated_by: T. Bagnall
+  data_source_link: ''
+  second_link: ''
+original_problem:
+  description: >
+    Spirit-fraud screening, from a University of East Anglia project with the
+    Scotch Whisky Research Institute: counterfeit spirits are typically bottled
+    with the wrong alcohol strength, so measuring ethanol content through the
+    sealed bottle would let an inspector screen a suspect batch without opening
+    it. Dau et al., "The UCR Time Series Archive" (arXiv:1810.07758), Sec. V,
+    "3) EthanolLevel data set": "This data set was produced as part of a project
+    with Scotch Whisky Research Institute into non-intrusively detecting forged
+    spirits (counterfeiting whiskey is an increasingly lucrative crime). One
+    such candidate method of detecting forgeries is by examining the ethanol
+    level extracted from a spectrograph. The data set covers twenty different
+    bottle types and four levels of alcohol: 35%, 38%, 40% and 45%. Each series
+    is a spectrograph of 1,751 observations."
+  prediction_target: ethanol concentration class of the liquid in the bottle (35%, 38%, 40%, 45%)
+  input_as_originally_posed: >
+    a spectrometer reading taken through the glass of a sealed bottle (light
+    source on one side, spectroscope on the other)
+  task_family: spectroscopy
+  stakeholder_and_use: >
+    trading-standards / customs inspectors and the drinks industry, screening
+    batches of suspect spirits non-invasively
+  source: >
+    Dau, Bagnall, Kamgar, Yeh, Zhu, Gharghabi, Ratanamahatana, Keogh, "The UCR
+    Time Series Archive", arXiv:1810.07758, Sec. V - read (PDF). The two
+    primary references the archive gives - Lines, Taylor, Bagnall (ICDM 2016),
+    which introduced the dataset, and Large, Kemsley, Wellner, Goodall, Bagnall
+    (PAKDD 2018) - were not reached; the PAKDD paper is paywalled at Springer.
+    The closely related UEA dataset EthanolConcentration is documented
+    first-hand by its donor in Bagnall et al. (arXiv:1811.00075) Sec. 7.1, read
+    in full, and describes the same instrument setup.
+  provenance_confidence: medium
+
+translation:
+  transformation: [spectrum-as-series]
+  what_the_x_axis_is: wavelength
+  sampling: >
+    1751 intensity values against wavelength. Sec. 7.1 of the UEA archive paper
+    describes the same recording setup for EthanolConcentration as "226nm to
+    1101.5nm with a sampling frequency of 0.5nm, over a one second integration
+    time" on a StellarNet BLACKComet-SR spectrometer, which matches this length;
+    the UCR page does not state the range itself.
+  information_lost_or_added: >
+    None structurally. The reading is taken through the bottle, so every series
+    carries the optical signature of its container (glass colour, thickness,
+    curvature, seams) on top of the ethanol signal - that container signature is
+    the dominant nuisance factor, and it is why the split was built to be
+    bottle-disjoint.
+  label_semantics_changed: "no"
+
+benchmark_task:
+  description: Classify a univariate length-1751 through-the-bottle spectrum into one of four ethanol concentrations.
+  is_same_as_original: "yes"
+  # Same four concentration classes and the same readings the project produced.
+
+verdict: ordered-not-temporal
+verdict_rationale: >
+  The problem is the spirits inspectors' own one, but each series is a
+  spectrometer reading indexed by wavelength, not a signal in time.
+known_issues:
+  - 'Relationship to the UEA dataset EthanolConcentration: both come from the same UEA / Scotch Whisky Research Institute spirit-authentication programme, use the same through-the-bottle StellarNet spectrometer setup and the same four concentration classes (35/38/40/45%), and have the same series length 1751. EthanolLevel is the earlier univariate release (20 bottle types, introduced by Lines et al., ICDM 2016); EthanolConcentration is the later release (44 bottles, Large et al., PAKDD 2018) in which each instance bundles three repeat readings as three channels. Whether specific readings are shared between the two releases is not documented anywhere I could reach. Treating them as two independent benchmarks - e.g. averaging over the UCR and UEA archives together - double-counts one experiment.'
+  - 'The good news, and it is unusual: the split is bottle-disjoint by design. UCR briefing document, Sec. V: "This data set is an example of when it is wrong to merge and resample, because the train/test sets are constructed so that the same bottle type is never in both data sets." Anyone who resamples or merges-and-reshuffles this dataset destroys the property that makes it meaningful, and will report inflated accuracy.'
+  - 'Bottle type is a strong confound in the underlying measurement (the light passes through the glass). The provided split controls for it; nothing else does.'
+  - 'The dataset is z-normalisation-sensitive: the class signal is partly in the absolute absorbance level, so preprocessing choices matter more here than the archive''s default advice suggests. Not verified against a source - flagged for a human to check.'
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.578
+    acc_permuted: 0.486
+    drop: 0.092
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 6.2
+    run: '2026-09-03'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.578
+    acc_raw_values: 0.55
+    acc_summary_stats: 0.282
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.028
+    gap_summary: 0.296
+    seed: 0
+    runtime_s: 8.1
+    run: '2026-09-03'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=EthanolLevel
+  - 'Dau, Bagnall, Kamgar, Yeh, Zhu, Gharghabi, Ratanamahatana, Keogh, "The UCR Time Series Archive", arXiv:1810.07758, Sec. V (read)'
+  - 'Bagnall, Dau, Lines, Flynn, Large, Bostrom, Southam, Keogh, "The UEA multivariate time series classification archive, 2018", arXiv:1811.00075, Sec. 7.1 (read)'
+  - 'Lines, Taylor, Bagnall, "HIVE-COTE: The hierarchical vote collective of transformation-based ensembles for time series classification", ICDM 2016 (not read)'
+  - 'Large, Kemsley, Wellner, Goodall, Bagnall, "Detecting Forged Alcohol Non-invasively Through Vibrational Spectroscopy and Machine Learning", PAKDD 2018, doi:10.1007/978-3-319-93034-3_24 (paywalled, not read)'

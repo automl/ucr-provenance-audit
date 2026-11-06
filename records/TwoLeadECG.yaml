@@ -1,0 +1,124 @@
+name: TwoLeadECG
+archive:
+- UCR
+archive_type_tag: ECG
+n_train: 23
+n_test: 1139
+series_length: 82
+n_channels: 1
+n_classes: 2
+archive_page:
+  description: 'TwoLeadECG is an ECG dataset taken from physionet by Eamonn Keogh.
+
+    Specifically, the data is from MIT-BIH Long-Term ECG Database
+
+    (ltdb) Record ltdb/15814, begin at time 420, ending at 1019. The
+
+    task is to distinguish between signal 0 and signal 1.'
+  donated_by: E. Keogh
+  data_source_link: https://www.physionet.org/
+  second_link: ''
+original_problem:
+  description: >
+    The source is the MIT-BIH Long-Term ECG Database on PhysioNet, which the
+    PhysioNet page describes as "7 long-duration electrocardiogram (ECG) recordings
+    (14 to 22 hours each), with manually reviewed beat annotations" - a resource for
+    long-term arrhythmia analysis. The archive page names the exact slice used:
+    "the data is from MIT-BIH Long-Term ECG Database (ltdb) Record ltdb/15814, begin
+    at time 420, ending at 1019. The task is to distinguish between signal 0 and
+    signal 1." The WFDB header for that record (physionet.org/files/ltdb/1.0.0/15814.hea,
+    read 2026-08) shows three ECG signals (ECG1, ECG2, ECG3) sampled at 310 Hz from a
+    patient annotated "Age: 58  Sex: M". So the archive's two classes are two
+    simultaneously recorded LEADS of one ten-minute stretch of one patient's ECG.
+  prediction_target: >
+    Which of two ECG leads (signal 0 vs signal 1 of record ltdb/15814) a heartbeat was
+    recorded on. Not a clinical category.
+  input_as_originally_posed: multi-lead long-term ambulatory ECG of one 58-year-old male
+  task_family: clinical-diagnosis
+  stakeholder_and_use: >
+    The LTDB itself supports arrhythmia-detection research; the archive's lead-identity
+    task has no clinical user.
+  source: >
+    timeseriesclassification.com description page and PhysioNet MIT-BIH Long-Term
+    ECG Database (https://physionet.org/content/ltdb/1.0.0/ and the 15814 header),
+    both read 2026-08. No paper posing this classification problem was found.
+  provenance_confidence: medium
+  # The recording is pinned down exactly (record, channel, time range) and the
+  # PhysioNet header confirms the multi-lead structure, so the *data* provenance is
+  # solid. What is missing is any document saying why lead discrimination was chosen
+  # as a task, hence not `high`.
+
+translation:
+  transformation: [channel-selection, windowing, z-normalization]
+  what_the_x_axis_is: time
+  sampling: >
+    310 Hz per the record header; a 599-second stretch (t = 420 to 1019 s) cut into
+    single beats of 82 samples, i.e. roughly 0.26 s per series. 23 train + 1139 test
+    = 1162 beats, consistent with ~580 beats per lead over ten minutes.
+  information_lost_or_added: >
+    Each beat is presented as an isolated univariate series, so the pairing between
+    the two leads of the same beat - the information a cardiologist actually uses
+    when reading a multi-lead ECG - is thrown away. Z-normalisation removes absolute
+    amplitude, which is one of the main things that differs between leads; what
+    remains is lead-specific waveform morphology (R/S ratio, T-wave polarity).
+  label_semantics_changed: >
+    yes: the label is the channel index of the recording, assigned by the curator.
+    It describes the electrode configuration, not the heartbeat.
+
+benchmark_task:
+  description: >
+    Given a length-82 heartbeat from a single ten-minute ECG of one patient, decide
+    which of the two leads it came from.
+  is_same_as_original: different-task
+
+verdict: native-tsc
+verdict_rationale: >
+  A genuine ECG with time on the x-axis, windowed to single beats - native TSC by
+  the decision rule - but the class is the recording channel, so the benchmark is a
+  lead-identification exercise rather than any cardiological problem.
+known_issues:
+  - >
+    The class is which electrode the signal came from. Lead morphology is nearly
+    constant across the ten minutes, so the task reduces to recognising two fixed
+    waveform templates; this explains why error rates on this dataset are very low
+    and why it carries little information about a classifier's temporal modelling.
+  - >
+    One patient, one ten-minute window. Every training beat and every test beat come
+    from the same recording, minutes apart, so train/test independence fails
+    completely and nearest-neighbour methods can exploit near-duplicate beats.
+  - >
+    23 training instances vs 1139 test instances.
+  - >
+    The record has three ECG signals; the archive uses two of them and does not say
+    which two ("signal 0" and "signal 1" in the archive's numbering vs ECG1/ECG2/ECG3
+    in the header). A verifier should confirm the mapping.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.9982
+    acc_permuted: 0.8358
+    drop: 0.1624
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 5.6
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.9982
+    acc_raw_values: 0.4996
+    acc_summary_stats: 0.4996
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.4987
+    gap_summary: 0.4987
+    seed: 0
+    runtime_s: 3.0
+    run: '2026-09-04'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=TwoLeadECG
+  - https://physionet.org/content/ltdb/1.0.0/
+  - https://physionet.org/files/ltdb/1.0.0/15814.hea
+  - Dau et al., "The UCR Time Series Archive", arXiv:1810.07758 (Sec. III-C, p. 3)

@@ -1,0 +1,108 @@
+name: Beef
+archive:
+- UCR
+archive_type_tag: SPECTRO
+n_train: 30
+n_test: 30
+series_length: 470
+n_channels: 1
+n_classes: 5
+archive_page:
+  description: "Food spectrographs are used in chemometrics to classify food types, a task\
+    \ that has obvious applications in food safety and quality assurance. The beef dataset\
+    \ consists of four classes of beef spectrograms, from pure beef and beef adulterated with\
+    \ varying degrees of offal. \n\nFurther information can be found in the original paper\
+    \ [1]. The data was first used in the time series classification literature in [2]. \n\
+    \n [1] Jowder et al. Detection of Adulteration in Cooked Meat Products by Mid-Infrared\
+    \ Spectroscopy, J. Agricultural and Food Chemistry, 50 (6), 2002.\n\n\n [2] Bagnall et\
+    \ al. Transformation Based Ensembles for Time Series Classification, SDM 2012."
+  donated_by: K. Kemsley, A. Bagnall
+  data_source_link: http://asu.ifr.ac.uk/example-datasets-for-download/
+  second_link: http://pubs.acs.org/doi/abs/10.1021/jf0108967
+original_problem:
+  description: >
+    A food-authenticity study from the Analytical Sciences Unit of the
+    Institute of Food Research, Norwich (Kemsley's group): detect adulteration
+    of beef with cheaper offal. Mid-infrared spectra were acquired from pure
+    beef and from beef containing 20% w/w of one of four offal adulterants,
+    and chemometrics was used to separate the five sample types. Abstract
+    (J. Agric. Food Chem. 50(6):1325-1329, 2002, read via Europe PMC):
+    "Mid-infrared spectroscopy was used to discriminate between pure beef and
+    beef containing 20% w/w of a range of potential adulterants (heart, tripe,
+    kidney, and liver). Spectra were acquired from raw samples and from samples
+    cooked using two different cooking regimes."
+  prediction_target: >
+    sample type - pure beef vs beef adulterated with one of four offals
+    (heart, tripe, kidney, liver)
+  input_as_originally_posed: mid-infrared (FTIR) absorbance spectrum of a meat sample
+  task_family: spectroscopy
+  stakeholder_and_use: meat-authenticity testing labs, food-safety regulators, processors
+  source: >
+    Al-Jowder, Kemsley, Wilson, "Detection of adulteration in cooked meat
+    products by mid-infrared spectroscopy", J. Agric. Food Chem. 50(6),
+    1325-1329, 2002, doi:10.1021/jf0108967. Only the abstract was read (via
+    the Europe PMC REST API); the ACS full text is paywalled, so the mapping
+    from class index to adulterant and the choice of cooking regime could not
+    be checked.
+  provenance_confidence: medium
+
+translation:
+  transformation: [spectrum-as-series]
+  what_the_x_axis_is: wavelength
+  sampling: >
+    470 absorbance values on the spectrometer's mid-IR wavenumber grid; the
+    archive states neither the wavenumber limits nor the resolution.
+  information_lost_or_added: >
+    Nothing structural is removed, but the ordering is the instrument's
+    wavenumber grid: adjacent points are correlated because absorption bands
+    are broad, not because of any dynamics. The chemometric treatment in the
+    source paper (PCA / PLS / LDA on the whole spectrum, after derivative
+    preprocessing) does not use sequence structure at all.
+  label_semantics_changed: "no"
+
+benchmark_task:
+  description: Classify a univariate length-470 mid-IR spectrum into one of five beef/offal sample types.
+  is_same_as_original: narrowed
+  # The paper covers raw plus two cooking regimes and several analyses; the
+  # archive ships one 60-spectrum, five-class subset of that experiment.
+
+verdict: ordered-not-temporal
+verdict_rationale: >
+  The classification task is the chemists' own five-way adulteration problem,
+  but the series index is a mid-IR wavenumber axis, not time.
+known_issues:
+  - 'archive_page description says "four classes of beef spectrograms"; the shipped data has five classes, matching the paper''s five sample types (pure beef plus four adulterants). The archive text is wrong.'
+  - 'Bagnall et al. (SDM 2012), Sec. 3.1: "Each beef class represents a differing degree of contamination with offal" - but the primary paper describes a single 20% w/w level of four *different* offals, not varying degrees of one. One of the two accounts is wrong; the class-to-adulterant mapping is documented nowhere I could reach.'
+  - Which cooking regime (raw, or one of the two cook levels) the released 60 spectra come from is not stated in the archive or in any secondary source I found.
+  - Very small and exactly balanced (6 train / 6 test cases per class); a single test error moves accuracy by 3.3 points.
+  - Not listed on the IFR "Example Datasets for Download" page that supplies Coffee/Meat/OliveOil/Ham/Strawberry, so the exact provenance of this particular 60-spectrum extract is unverified.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.8333
+    acc_permuted: 0.7667
+    drop: 0.0667
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 5.2
+    run: '2026-09-03'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.8333
+    acc_raw_values: 0.2
+    acc_summary_stats: 0.2
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.6333
+    gap_summary: 0.6333
+    seed: 0
+    runtime_s: 2.4
+    run: '2026-09-03'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=Beef
+  - 'Al-Jowder, Kemsley, Wilson, J. Agric. Food Chem. 50(6):1325-1329, 2002, doi:10.1021/jf0108967 (abstract, via Europe PMC REST API)'
+  - 'Bagnall, Davis, Hills, Lines, "Transformation Based Ensembles for Time Series Classification", SDM 2012, Sec. 3.1 (https://archive.uea.ac.uk/~ajb/Papers/BagnallSDM2012.pdf)'
+  - 'IFR Analytical Sciences, "Example Datasets for Download" (http://asu.ifr.ac.uk/example-datasets-for-download/, via the Internet Archive)'

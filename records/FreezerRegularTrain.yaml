@@ -1,0 +1,148 @@
+name: FreezerRegularTrain
+archive:
+- UCR
+archive_type_tag: DEVICE
+n_train: 150
+n_test: 2850
+series_length: 301
+n_channels: 1
+n_classes: 2
+archive_page:
+  description: The collection of this data was part of the project titled Personalised Retrofit
+    Decision Support Tools for UK Homes using Smart Home Technology (REFIT). The REFIT dataset
+    includes data from 20 households from Loughborough area over the period 2013-2014 (see
+    [1], [2]).  We use data of freezers in House 1 to make two datasets. These two datasets
+    share a same test set and only differ in the number of training instances. There is nothing
+    to infer from the order of examples in the train and test set  Data created by David Murray
+    et al. (see [2]). Data edited by Shaghayegh Gharghabi, Hoang Anh Dau and Eamonn Keogh.  [1]  (Link
+    Here)   [2] Murray, David et al., "A data management platform for personalised real-time
+    energy feedback", Proceedings of the 8th International Conference on Engery Efficiency
+    in Domestic Appliances and Lighting, 2015.  There are two classes, one representing the
+    power demand of the fridge freezer in the kitchen, the other representing the power demand
+    of the (less frequently used) freezer in the garage. They are hard to tell apart globally
+    but they differ locally.
+  donated_by: REFIT project
+  data_source_link: http://www.refitsmarthomes.org/
+  second_link: ''
+original_problem:
+  description: >
+    The data come from the REFIT electrical load measurements study, which
+    continuously monitored whole-house aggregate load plus nine individual
+    appliances in each of 20 UK households at 8-second intervals over two years.
+    REFIT metered 20 homes in the Loughborough area (2013-2014) to produce
+    smart-meter-like data for energy services -- the paper lists the intended
+    uses as "load shifting", "retrofit advice, i.e., installing replacement
+    appliances or energy savings measures", "smart home automation" and
+    "activity recognition" (Background & Summary). No classification task was
+    posed by the project itself; the UCR datasets were cut from these recordings
+    by Gharghabi, Dau and Keogh.
+    The benchmark uses only the two freezer channels of House 1.
+  prediction_target: >
+    which of two freezers in one house the power trace came from (kitchen
+    fridge-freezer vs the less-used garage freezer)
+  input_as_originally_posed: 8-second-interval active-power readings from an appliance-level smart plug
+  task_family: device-monitoring
+  stakeholder_and_use: >
+    REFIT's stakeholders are energy-feedback and retrofit-advice services; the
+    specific "which of these two freezers" question has no operational user and
+    was constructed as an algorithm benchmark (a hard, locally-discriminable
+    pair).
+  source: >
+    REFIT project ("Personalised Retrofit Decision Support Tools for UK Homes
+    using Smart Home Technology"); primary data descriptor read: Murray,
+    Stankovic & Stankovic, "An electrical load measurements dataset of United
+    Kingdom households from a two-year longitudinal study", Scientific Data 4,
+    160122 (2017), Abstract: "The REFIT electrical load measurements dataset
+    described in this paper includes whole house aggregate loads and nine
+    individual appliance measurements at 8-second intervals per house, collected
+    continuously over a period of two years from 20 houses." 
+    Curation described in Dau et al., "The UCR Time Series Archive",
+    arXiv:1810.07758, Sec. VI-B-5 ("Electrical Load Measurement data - Freezer
+    data sets"): "All data are from freezers in House 1. This data set has two
+    classes, one representing the power demand of the fridge freezer in the
+    kitchen, the other representing the power demand of the (less frequently
+    used) freezer in the garage."
+  provenance_confidence: high
+translation:
+  transformation:
+  - windowing
+  - z-normalization
+  what_the_x_axis_is: time
+  sampling: >
+    301 consecutive readings per series. REFIT's native rate is one reading
+    every 8 seconds, so a series spans roughly 40 minutes -- about one
+    compressor cycle; the curators do not state whether they resampled.
+  information_lost_or_added: >
+    Two continuous two-year appliance recordings are cut into short windows, so
+    every instance is a slice of the same two signals. Dau et al. (Sec. VI-B-5)
+    describe the resulting shape: "Each consists of a flat region (the
+    compressor is off), followed by an instantaneous increase (the compressor is
+    switched on), followed by a slower decease as the compressor builds some
+    rotational inertial", and note the classes "are difficult to tell apart
+    globally but they differ locally" -- i.e. the discriminative evidence is a
+    subtle local transient, not the profile as a whole.
+  label_semantics_changed: >
+    yes: the label is the submeter channel identity (which of two appliances in
+    one house), assigned by the curators from REFIT metadata; the project
+    collected no class labels and posed no classification task.
+benchmark_task:
+  description: >
+    Classify a 301-point power-demand window as coming from the kitchen
+    fridge-freezer or the garage freezer of REFIT House 1.
+  is_same_as_original: different-task
+verdict: native-tsc
+verdict_rationale: >
+  The signal is genuine 8-second appliance power metering on a real time axis;
+  the caveat is not the modality but that the label is curator-assigned device
+  identity within a single household.
+known_issues:
+- >
+  FreezerRegularTrain and FreezerSmallTrain are the SAME data: identical test
+  set of 2850 series, differing only in training-set size (150 here vs 28 in
+  FreezerSmallTrain). Dau et al. Sec. VI-B-5: "We created two train set
+  versions: a smaller train set and a regular train set (both are accompanied
+  by a same test set)." Results on the two are not independent evidence, and
+  archive-wide accuracy averages count this data twice.
+- >
+  Every series in both classes comes from ONE house and ONE physical appliance
+  per class. Anything specific to those two units (compressor model, ambient
+  temperature of kitchen vs garage) is a perfect shortcut for the label, and
+  nothing shows the result would transfer to other freezers.
+- >
+  All instances are windows of two continuous recordings, so train and test
+  windows can be minutes apart in the same recording; i.i.d. train/test
+  independence is not supported.
+- >
+  The classes are deliberately near-indistinguishable globally (Dau et al.:
+  "global algorithms, such as 1-NN with Euclidean distance may have a hard time
+  beating the default rate"), so accuracy on this dataset measures sensitivity
+  to one local transient rather than appliance recognition.
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.9996
+    acc_permuted: 0.9933
+    drop: 0.0063
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 6.1
+    run: '2026-09-03'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.9996
+    acc_raw_values: 0.9656
+    acc_summary_stats: 0.9267
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.034
+    gap_summary: 0.073
+    seed: 0
+    runtime_s: 3.6
+    run: '2026-09-03'
+references:
+- https://www.timeseriesclassification.com/description.php?Dataset=FreezerRegularTrain
+- Murray, Stankovic & Stankovic, "An electrical load measurements dataset of United Kingdom households from a two-year longitudinal study", Scientific Data 4, 160122 (2017), https://www.nature.com/articles/sdata2016122
+- Murray et al., "A data management platform for personalised real-time energy feedback", EEDAL 2015 (cited by the archive page; not read)
+- Dau et al., "The UCR Time Series Archive", arXiv:1810.07758, Sec. VI-B-5
+- http://www.refitsmarthomes.org/

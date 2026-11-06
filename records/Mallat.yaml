@@ -1,0 +1,96 @@
+name: Mallat
+archive:
+- UCR
+archive_type_tag: SIMULATED
+n_train: 55
+n_test: 2345
+series_length: 1024
+n_channels: 1
+n_classes: 8
+archive_page:
+  description: 'Mallat is a simulated dataset described in Mallat, S. G. (1998), A
+
+    Wavelet Tour of Signal Processing.'
+  donated_by: M Jeong, S Mallat
+  data_source_link: ''
+  second_link: ''
+original_problem:
+  description: >
+    No real-world problem exists. The archive states only that Mallat is a
+    simulated dataset described in Mallat, "A Wavelet Tour of Signal
+    Processing" (1998), donated by M. Jeong and S. Mallat - i.e. the series
+    are variants of a synthetic test signal of the kind used in that book to
+    illustrate wavelet approximation, not measurements of anything. What
+    the eight classes are, and which equations generate them, is not
+    documented on the archive page and no publication defining them was
+    found.
+  prediction_target: which of eight generated signal variants produced the series (semantics of the eight classes undocumented)
+  input_as_originally_posed: synthetically generated signal
+  task_family: synthetic-demo
+  stakeholder_and_use: none (synthetic demo)
+  source: >
+    Archive page only - "Mallat is a simulated dataset described in Mallat,
+    S. G. (1998), A Wavelet Tour of Signal Processing", donated_by
+    "M Jeong, S Mallat", with no data_source_link and no second_link. The
+    book's relevant section, and any paper by M. Jeong defining the eight
+    classes, could not be located; searches returned only papers that use
+    the dataset via the archive. Stating what the classes mean would be
+    invention, so it is left as unknown here. What can be checked directly
+    from the shipped data - 2400 series of length 1024, exactly 300 per
+    class, and all eight class-mean waveforms share one piecewise-smooth
+    base signal (deep transients around index ~300, a large excursion
+    around index ~850-890) and differ only in the height and shape of a few
+    local segments (chiefly around indices 160-300 and 850-900) - which is
+    consistent with eight variants of a single test signal, but does not
+    identify them.
+  provenance_confidence: low
+
+translation:
+  transformation: [simulation]
+  what_the_x_axis_is: index
+  sampling: 1024 generated points per series; no clock or physical axis is defined
+  information_lost_or_added: n/a (generated directly in series form)
+  label_semantics_changed: "no"
+
+benchmark_task:
+  description: Classify a univariate length-1024 series into eight generated signal classes.
+  is_same_as_original: no-original-exists
+
+verdict: synthetic
+verdict_rationale: >
+  Simulated signal with no underlying real-world task (task_family
+  synthetic-demo, rule 1); the axis is a sample index of a generated
+  waveform, not time.
+known_issues:
+  - Class semantics and generating equations are undocumented; a human verifier should try to locate the definition in Mallat (1998) or in work by M. Jeong before the record is trusted.
+  - Extremely lopsided default split - 55 train against 2345 test (about 7 train series per class), so the reported accuracies are dominated by how well 7 exemplars pin down each class.
+  - Classes are minor variants of one base waveform (checked in the shipped data), so nearest-neighbour style methods can be near-ceiling while the task measures little.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.9458
+    acc_permuted: 0.936
+    drop: 0.0098
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 6.1
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.9458
+    acc_raw_values: 0.8503
+    acc_summary_stats: 0.5706
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.0955
+    gap_summary: 0.3753
+    seed: 0
+    runtime_s: 3.2
+    run: '2026-09-04'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=Mallat
+  - Mallat, A Wavelet Tour of Signal Processing, Academic Press, 1998 (cited by the archive; the passage defining these eight classes was NOT located)
+  - Own inspection of the shipped Mallat_TRAIN.txt / Mallat_TEST.txt (class counts and class-mean waveforms)

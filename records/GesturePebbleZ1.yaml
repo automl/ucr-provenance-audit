@@ -1,0 +1,154 @@
+name: GesturePebbleZ1
+archive:
+- UCR
+archive_type_tag: HAR
+n_train: 132
+n_test: 172
+series_length: variable
+n_channels: 1
+n_classes: 6
+archive_page:
+  description: 'The data are collected with Pebble smart watch featuring 3-axis accelerometer.
+    Data collection involves 4 subjects perform 6 gestures in two sessions several days apart.  There
+    are 6 classes corresponding to distinct gestures (see the paper for gesture depiction
+    and annotation).  - Class 1: hh - Class 2: hu - Class 3: ud - Class 4: hud - Class 5:
+    hh2 - Class 6: hu2  We make two datasets out of these data.  ## GesturePebbleZ1  This
+    uses z-axis reading only. The train set contains data of all 4 subjects collected in the
+    first session. The test set is data of all 4 subjects collected in the second session.
+    For processing convenience, we pad NaN to the end of each time series to the length of
+    the longest time series.  ## GesturePebbleZ2  This uses z-axis reading only. The train
+    set contains data of two subjects collected in both sessions. The test set is data of
+    the other two subjects collected in both sessions. Note that in this case, a same subject
+    does not appear in both train and test set.  Data created by Mezari, Antigoni, and Ilias
+    Maglogiannis (see [1]). Data edited by Hoang Anh Dau.  [1] Mezari, Antigoni, and Ilias
+    Maglogiannis. "Gesture recognition using symbolic aggregate approximation and dynamic
+    time warping on motion data." Proceedings of the 11th EAI International Conference on
+    Pervasive Computing Technologies for Healthcare. ACM, 2017.'
+  donated_by: I. Maglogiannis
+  data_source_link: ''
+  second_link: ''
+original_problem:
+  description: >
+    Mezari and Maglogiannis studied whether a commodity smartwatch can recognise
+    natural hand gestures well enough to drive everyday device control, using the
+    watch as the sensor and a phone as the processing unit (abstract, read in full:
+    "Motion data produced by the accelerometer of a smart watch can be utilized in
+    hand gesture recognition... Symbolic Aggregate Approximation (SAX) and Dynamic
+    Time Warping (DTW) methodologies are utilized in this context and evaluated
+    using a set of six 3-D natural gestures."). The UCR briefing document describes
+    the collection (Sec. VI-C-2, p. 9-10): "The data is collected with the 3-axis
+    accelerometer Pebble smart watch mounted to the participants wrist. Each subject
+    is instructed to perform six gestures... The data collection included four
+    participants, each of which repeated the gesture set in two separate sessions a
+    few days part. In total, there are eight recordings, which contain 304
+    gestures." The gesture labels (hh, hu, ud, hud, hh2, hu2) are the original
+    authors' and, per the briefing's Fig. 7 caption, "may not have any special
+    meaning"; the gestures were chosen because "they are characterized by the wrist
+    movements; they simple and natural enough to replicate; and they can be related
+    to commands to control devices".
+  prediction_target: which of six wrist gestures was performed
+  input_as_originally_posed: >
+    three-axis acceleration from a Pebble smartwatch worn on the wrist
+  task_family: activity-recognition
+  stakeholder_and_use: >
+    smartwatch-based gesture control of devices; the source group works on
+    pervasive computing for healthcare, and the paper appeared at a health-oriented
+    pervasive computing conference
+  source: >
+    Mezari, Maglogiannis, "Gesture recognition using symbolic aggregate
+    approximation and dynamic time warping on motion data", PervasiveHealth/PETRA
+    (11th EAI Int. Conf. on Pervasive Computing Technologies for Healthcare), ACM
+    2017. Full text NOT READ (closed access; OpenAlex reports no OA copy); abstract
+    read in full via the OpenAlex API. The collection details above come from the
+    UCR briefing document, which I read.
+  provenance_confidence: medium
+translation:
+  transformation: [channel-selection]
+  what_the_x_axis_is: time
+  sampling: >
+    Pebble smartwatch three-axis accelerometer worn on the wrist; only the z-axis
+    channel is kept and series keep their natural variable length (NaN-padded to the
+    longest for storage). The sampling rate is not stated on the archive page or in
+    the UCR briefing document.
+    Split design (this is the only difference from GesturePebbleZ2), UCR briefing
+    Sec. VI-C-2, p. 10: "GesturePebbleZ1: The train set consists of data of all
+    subjects collected in the first session. The test set consists of all data
+    collected in the second session. This way, data of each subject appear in both
+    train and test set."
+  information_lost_or_added: >
+    Two of the three accelerometer axes are dropped, so gestures distinguished mainly
+    by movement in the other planes lose their discriminating evidence; gesture
+    duration is preserved (variable length) but the NaN padding must be handled by
+    the user. Subject and session identity are not released as fields, only implied
+    by the split.
+  label_semantics_changed: "no"
+benchmark_task:
+  description: >
+    Classify a variable-length z-axis wrist-accelerometer series as one of six
+    gestures, under the split described above.
+  is_same_as_original: narrowed
+verdict: native-tsc
+verdict_rationale: >
+  Wrist-worn accelerometer recordings of real gestures on a physical time axis; the
+  only translation is keeping one of three channels and padding to equal length.
+known_issues:
+  - >
+    All four subjects appear in both train and test (they are separated by session,
+    not by person), so a classifier can exploit per-subject motion signatures:
+    identity shortcut by construction. This is the easier of the pair - constrained
+    DTW error 0.1744 here against 0.2215 on the subject-disjoint GesturePebbleZ2
+    (archive DataSummary.csv), which is the size of the identity/session effect.
+  - >
+    The split is confounded the other way too: train is session 1 and test is session
+    2, so subject familiarity helps while session drift (watch re-mounting, days
+    apart) hurts. The two effects cannot be separated within this data set.
+  - >
+    Only four participants and 304 gestures in total, split two ways. GesturePebbleZ1
+    and GesturePebbleZ2 are the *same* 304 recordings under two different splits, so
+    they must not be treated as two independent data sets when averaging results over
+    the archive.
+  - >
+    Variable-length series NaN-padded to the longest (UCR briefing Sec. VI-C-2, p. 9:
+    "we pad enough NaNs to the end of each time series, to make it the same length of
+    the longest time series... We deliberately refrain from offering any advice on how
+    to best do this"); the padding handling is part of the benchmark.
+  - >
+    Only the z-axis is released: "We created two data sets from the original data,
+    both using only the z-axis reading (out of the three channels/attributes
+    available)" (UCR briefing Sec. VI-C-2, p. 10). No multivariate version exists in
+    the archives.
+  - >
+    Primary paper closed access (abstract only) - provenance_confidence capped at
+    medium; sampling rate of the Pebble accelerometer is not documented anywhere I
+    could reach.
+  - >
+    archive_type_tag: recorded here as HAR (site aggregate table); the archive's own
+    DataSummary.csv files GesturePebbleZ1/Z2 under "Sensor".
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.907
+    acc_permuted: 0.8023
+    drop: 0.1047
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 5.2
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.907
+    acc_raw_values: 0.7616
+    acc_summary_stats: 0.6395
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.1453
+    gap_summary: 0.2674
+    seed: 0
+    runtime_s: 3.3
+    run: '2026-09-04'
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=GesturePebbleZ1
+  - Mezari, Maglogiannis, "Gesture recognition using symbolic aggregate approximation and dynamic time warping on motion data", PETRA/PervasiveHealth 2017 - closed access, abstract read via the OpenAlex API
+  - Dau, Bagnall, Kamgar, Yeh, Zhu, Gharghabi, Ratanamahatana, Keogh, "The UCR Time Series Archive", arXiv:1810.07758 (PDF read)
+  - UCR archive DataSummary.csv (baseline error rates and archive type tags), cached at scripts/sources/ucr_DataSummary.csv

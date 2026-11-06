@@ -1,0 +1,145 @@
+name: CricketX
+archive:
+- UCR
+archive_type_tag: HAR
+n_train: 390
+n_test: 390
+series_length: 300
+n_channels: 1
+n_classes: 12
+archive_page:
+  description: "The series Cricket X, Y and Z are accelerometer data (in three dimensions)\n\
+    taken from actors performing cricket gestures. The twelve classes\nare different umpire\
+    \ signals:\n \n  Cancel Call\n  Dead Ball\n  Four\n  Last Hour \n  Leg Bye\n  No Ball\n\
+    \  One Short\n  Out\n  Penalty Runs\n  Six\n  TV Replay\n  Wide. \n \n\nThey mounted two\
+    \ accelerometers orthogonal to\neach other, thus acceleration is measured in 3D space.\
+    \ The\naccelerometers are housed in a small wrist watch sized enclosure\nworn in the form\
+    \ of a wrist band. Taken together the data is a multivariate\ntime series classification\
+    \ problem, but the series are not aligned so in its current format cannot be used as such.\
+    \ The data has been normalised.\n\nOriginally used in Ko et al. \"Online Context Recognition\
+    \ in Multisensor Systems using Dynamic\nTime Warping\"  (Link Here)"
+  donated_by: A. Mueen, E. Keogh
+  data_source_link: http://www.cs.ucr.edu/~mueen/LogicalShapelet/
+  second_link: http://ieeexplore.ieee.org/xpl/login.jsp?tp=&arnumber=1595593&url=http%3A%2F%2Fieeexplore.ieee.org%2Fxpls%2Fabs_all.jsp%3Farnumber%3D1595593
+original_problem:
+  description: >
+    Automatic annotation of cricket matches from the officials' body motion:
+    umpires signal match events (four, six, wide, no-ball, out, ...) with
+    codified arm gestures, and the study instrumented umpires with wrist-worn
+    accelerometers so that these signals could be recognised online and used to
+    label the video/scorecard. The UCR briefing document describes the labels
+    (Sec. III-A, p. 3): "in the Cricket data sets, each signal belongs to one of
+    the twelve classes, representing the hand signs made by an umpire". The UEA
+    archive paper's description of the multivariate version of the same
+    recordings states that the data involve "four umpires performing twelve
+    signals, each with ten repetitions" collected at 184 Hz, with an
+    accelerometer on each wrist giving "three synchronous measures for three axes
+    (x, y and z)", i.e. six dimensions in total.
+  prediction_target: which of twelve cricket umpire signals was performed
+  input_as_originally_posed: >
+    acceleration from wrist-worn accelerometers ("housed in a small wrist watch
+    sized enclosure worn in the form of a wrist band", archive description page)
+  task_family: activity-recognition
+  stakeholder_and_use: >
+    sports-video annotation and automatic scoring systems; more generally the
+    source authors' interest was online context recognition from wearable
+    multisensor streams
+  source: >
+    Ko, West, Venkatesh, Kumar, "Online Context Recognition in Multisensor
+    Systems using Dynamic Time Warping", ISSNIP 2005 (DOI
+    10.1109/ISSNIP.2005.1595593). NOT READ: the paper is closed access (Unpaywall
+    reports oa_status "closed"; the archive's own second_link is a dead IEEE
+    Xplore login URL, and the Semantic Scholar "open access" copy at
+    dro.deakin.edu.au returns an empty file). Layer 1 above therefore rests on the
+    archive description page, the UCR briefing document and the UEA archive
+    paper's description of the multivariate version.
+  provenance_confidence: medium
+translation:
+  transformation: [channel-selection, z-normalization]
+  what_the_x_axis_is: time
+  sampling: >
+    Wrist-worn accelerometers sampled at 184 Hz according to the UEA archive
+    paper's description of the same recordings; the UCR version keeps a single
+    axis (x) at a fixed length of 300 points (~1.6 s at 184 Hz), against 1197
+    points in the UEA multivariate version. How the archive obtained length 300
+    (truncation, resampling, or a different segmentation) is not documented.
+  information_lost_or_added: >
+    Five of the six original channels are dropped (both wrists x three axes reduced
+    to one axis), so gestures that differ mainly in the other arm's motion or in
+    the plane of movement become harder or impossible to separate. Amplitude is
+    removed by the donors' normalization, and the length normalization to 300
+    removes gesture duration.
+  label_semantics_changed: "no"
+benchmark_task:
+  description: >
+    Classify a normalized length-300 single-axis wrist-accelerometer series as one
+    of twelve cricket umpire signals.
+  is_same_as_original: narrowed
+verdict: native-tsc
+verdict_rationale: >
+  Body-worn accelerometer recordings of real gestures with time as the x-axis; the
+  translation only selects one channel and fixes the length, leaving the original
+  umpire-signal task intact.
+known_issues:
+  - >
+    Only four umpires (UEA archive paper, dataset descriptions). The UCR 390/390
+    split is not documented as subject-disjoint and the released files carry no
+    subject id, so a classifier may key on who is wearing the band: identity
+    shortcut.
+  - >
+    No "not-a-signal" class. UCR briefing Sec. III-A, p. 3: "for perhaps 99% of a
+    game, the umpire is not making any signal. It can be argued that any practical
+    system needs to have a thirteenth class named 'not-a-sign'." The benchmark is
+    therefore a pre-segmented, closed-world version of the deployment problem.
+  - >
+    CricketX, CricketY and CricketZ are the same recordings projected onto three
+    axes; results on them are not independent. A genuinely multivariate version of
+    the same recordings exists as UEA "Cricket" (6 dimensions, series length 1197,
+    108 train / 72 test) - note that the UCR length of 300 does not match, so the
+    two archives' versions were segmented/length-normalized differently and the
+    UCR preprocessing that produced length 300 is undocumented.
+  - >
+    Data arrived pre-normalized ("The data has been normalised", archive
+    description), so raw amplitude information is unavailable.
+  - >
+    Provenance chain is broken: the archive's data_source_link points at Mueen's
+    Logical Shapelets page, which I fetched - it hosts a *different* and much
+    smaller cricket set (9 training and 98 testing series, two classes, "the label
+    0 is for wideball and label 1 is for no ball"), not the twelve-class
+    X/Y/Z data. The link does not document this data set.
+  - >
+    Primary source (Ko et al. 2005) unreachable; provenance_confidence is capped
+    at medium until someone with IEEE access reads it.
+  - >
+    archive_type_tag: recorded here as HAR (site aggregate table); the archive's
+    own DataSummary.csv files CricketX/Y/Z under "Motion".
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.8205
+    acc_permuted: 0.6128
+    drop: 0.2077
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 5.8
+    run: '2026-09-03'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.8205
+    acc_raw_values: 0.5308
+    acc_summary_stats: 0.4538
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.2897
+    gap_summary: 0.3667
+    seed: 0
+    runtime_s: 8.9
+    run: '2026-09-03'
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=CricketX
+  - Ko, West, Venkatesh, Kumar, "Online Context Recognition in Multisensor Systems using Dynamic Time Warping", ISSNIP 2005 - closed access, NOT read
+  - Bagnall, Dau, Lines, Flynn, Large, Bostrom, Southam, Keogh, "The UEA multivariate time series classification archive, 2018", arXiv:1811.00075 (description of the multivariate Cricket data)
+  - Dau, Bagnall, Kamgar, Yeh, Zhu, Gharghabi, Ratanamahatana, Keogh, "The UCR Time Series Archive", arXiv:1810.07758 (PDF read)
+  - http://alumni.cs.ucr.edu/~mueen/LogicalShapelet/ (the archive's data_source_link; hosts a different cricket data set)
+  - UCR archive DataSummary.csv (baseline error rates and archive type tags), cached at scripts/sources/ucr_DataSummary.csv

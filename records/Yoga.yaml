@@ -1,0 +1,125 @@
+name: Yoga
+archive:
+- UCR
+archive_type_tag: IMAGE
+n_train: 300
+n_test: 3000
+series_length: 426
+n_channels: 1
+n_classes: 2
+archive_page:
+  description: 'The dataset was obtained by capturing two actors transiting between
+
+    yoga poses in front of a green screen. The problem is to
+
+    discriminate between one actor (male) and another (female). Each
+
+    image was converted to a one dimensional series by finding the
+
+    outline and measuring the distance of the outline to the centre.
+
+    The dataset was obtained by capturing two actors transiting between
+
+    yoga poses in front of a green screen. The problem is to
+
+    discriminate between one actor (male) and another (female). Each
+
+    image was converted to a one dimensional series by finding the
+
+    outline and measuring the distance of the outline to the centre.'
+  donated_by: L. Wei, E. Keogh
+  data_source_link: ''
+  second_link: ''
+original_problem:
+  description: >
+    Built by Wei & Keogh (KDD 2006, Sec. 4.5) as a "realistic dataset" for their
+    semi-supervised time-series classification method: "The dataset was obtained
+    by capturing two actors transiting between yoga poses in front of a green
+    screen." The task is to tell the two actors apart - "In total, we have 316
+    time series with an average length of 426. Among them, 156 time series came
+    from the female actor and 150 time series came from the male actor" - so the
+    label is actor identity, not pose. The images were converted to series
+    because "it has been shown recently that in many domains it can be useful to
+    convert images into pseudo time series".
+  prediction_target: which of two actors (female vs male) the silhouette belongs to
+  input_as_originally_posed: video frame of an actor against a green screen, from which the body silhouette was extracted
+  task_family: image-classification
+  stakeholder_and_use: >
+    none applied; the data were captured to demonstrate a semi-supervised
+    learning method, so the "problem" is already benchmark-shaped
+  source: >
+    Wei & Keogh, "Semi-Supervised Time Series Classification", KDD 2006,
+    Sec. 4.5 (read).
+  provenance_confidence: high
+
+translation:
+  transformation: [contour-unrolling, resampling, z-normalization]
+  what_the_x_axis_is: arc-length
+  sampling: >
+    426 points per frame. Wei & Keogh, Fig. 12 caption: "Shapes can be converted
+    to time series. The distance from every point on the profile to the center is
+    measured and treated as the Y-axis of a time series."
+  information_lost_or_added: >
+    Each series is one still frame - the temporal continuity of the video, which
+    is the natural signal for a pose-transition problem, is discarded entirely,
+    and what remains is a body silhouette parameterized by arc-length. Body size
+    is removed by z-normalization even though the two actors differ in build.
+  label_semantics_changed: "yes: the label is the identity of the actor, so a video of yoga poses became a person-discrimination problem"
+
+benchmark_task:
+  description: Classify a length-426 body-outline series as the female or the male actor.
+  is_same_as_original: "yes"
+  # Same actor-discrimination task as Wei & Keogh, though the archive version is
+  # roughly ten times larger than the 306 series reported there.
+
+verdict: translated-modality
+verdict_rationale: >
+  Video frames reduced to body silhouettes indexed by contour arc-length; the
+  within-series ordering is spatial and the frame-to-frame temporal structure of
+  the source video is not part of an instance.
+known_issues:
+  - 'The label is actor identity, so the dataset is person discrimination from a silhouette; the yoga content is incidental and any actor-specific factor (build, clothing, camera position) is a legitimate shortcut.'
+  - >
+    Train and test are drawn from the same pool of video frames (measured 2026-11-04 on the
+    archive's shipped files; script ~/astra-review-work/controller-Yoga/yoga_check2.py). No
+    test series is identical to a training series (closest train/test pair at Euclidean
+    distance 0.43), but every training frame has a near-twin in test: two random frames are
+    typically 23.8 apart, while each training frame's nearest same-actor test frame is a
+    median 2.09 away (under 2 for 47% of training frames, under 5 for 92%); the nearest
+    other-actor test frame is a median 3.94 away. At equal pool size (300 random test
+    frames), training frames find their nearest neighbour at a median 3.12 and held-out test
+    frames at 3.19, so the training set is statistically indistinguishable from a random
+    draw of the test frames: the split does not separate filming occasions. The files are
+    shuffled (neighbouring rows are as far apart as random pairs), so literal frame
+    adjacency across the split could not be reconstructed; the evidence is distance-based.
+  - 'Archive version has 3300 instances against the 306 reported by Wei & Keogh, and Wei & Keogh explicitly trained and tested on the same data ("We use the same dataset both for training and testing"); how the archive split was constructed is undocumented.'
+  - Two subjects only - the smallest possible basis for an identity task.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.9103
+    acc_permuted: 0.8443
+    drop: 0.066
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 6.7
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.9103
+    acc_raw_values: 0.8057
+    acc_summary_stats: 0.74
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.1047
+    gap_summary: 0.1703
+    seed: 0
+    runtime_s: 4.3
+    run: '2026-09-04'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=Yoga
+  - Wei & Keogh, "Semi-Supervised Time Series Classification", KDD 2006 - http://alumni.cs.ucr.edu/~wli/publications/p215-Wei-long.pdf
+  - Dau et al., "The UCR Time Series Archive", arXiv:1810.07758

@@ -1,0 +1,147 @@
+name: GestureMidAirD1
+archive:
+- UCR
+archive_type_tag: HAR
+n_train: 208
+n_test: 130
+series_length: variable
+n_channels: 1
+n_classes: 26
+archive_page:
+  description: "Data contain 3D hand trajectories collected with Leap Motion device. There\
+    \ are 13 subjects, each performs 26 interface-command gestures. \n\nEach gesture is encoded\
+    \ as a sequence of 3D points, representing the position of the dominant-hand forefinger.\
+    \ There are 26 classes corresponding to unique gestures. \nSee Fig. 1 of [2] for the list\
+    \ of gestures and their visualisation.  \n\n \n \n Class 1: arc3Dleft\n Class 2: arc3Dright\n\
+    \ Class 3: caret\n Class 4: check\n Class 5: circle\n Class 6: curly-bracket-left\n Class\
+    \ 7: curly-bracket-right\n Class 8: delete\n Class 9: left-swipe\n Class 10: pigtail\n\
+    \ Class 11: poly3Dxyz\n Class 12: poly3Dxzy\n Class 13: poly3Dyxz\n Class 14: poly3Dyzx\n\
+    \ Class 15: poly3Dzxy\n Class 16: poly3Dzyx\n Class 17: rectangle\n Class 18: right-swipe\n\
+    \ Class 19: spiral\n Class 20: square-bracket-left\n Class 21: square-bracket-right\n\
+    \ Class 22: star\n Class 23: triangle\n Class 24: v\n Class 25: x\n Class 26: zig-zag\
+    \ \n \n \n\n  We make three datasets out of these data, one for each dimension. We follow\
+    \ the original paper (see [2]) and use data of 8 subjects for training and 5 subjects\
+    \ for testing. Data of a same subjects does not appear in both train and test set, so\
+    \ resampling may introduce bias.  \n\n  Data created by Fabio M. Caputo et al. (see [1],\
+    \ [2]). Data edited by Hoang Anh Dau.  \n\n  [1] Github repo:  (Link Here) \n  [2] Caputo,\
+    \ Fabio M., et al. Comparing 3D trajectories for simple mid-air gesture recognition. Computers\
+    \ & Graphics. 73 (2018): 17-25."
+  donated_by: H. A. Dau
+  data_source_link: https://github.com/giach68/gesturesCodes
+  second_link: ''
+original_problem:
+  description: >
+    A human-computer-interaction study of mid-air command gestures: 13 people drew
+    each of 26 stroke-like commands (check, delete, circle, star, swipes, brackets,
+    3D polylines, ...) in the air, and a Leap Motion controller tracked the
+    dominant-hand forefinger, giving a 3D trajectory per gesture. The point of the
+    study was to compare trajectory-matching methods for recognising such gestures
+    from a single 3D trace. I could not read the paper itself (ScienceDirect
+    returns 403), but I read the authors' released data and code repository: each
+    file datasetNew/<subject>/<gesture>.csv holds rows of "x y z timestamp_ms",
+    e.g. datasetNew/andrea/circle.csv begins "102.852000 256.310000 -9.241170
+    1413211577069" with successive timestamps 17-18 ms apart, and the MATLAB
+    pipeline (processCagliaritani.m) reads 26 gesture files per subject and
+    resamples them to uniform length before comparing.
+  prediction_target: which of 26 mid-air interface-command gestures was drawn
+  input_as_originally_posed: >
+    3D position trajectory of the dominant-hand forefinger captured by a Leap
+    Motion controller (position in mm, with per-sample timestamps)
+  task_family: activity-recognition
+  stakeholder_and_use: >
+    designers of mid-air gestural interfaces (touchless control of displays,
+    VR/AR applications)
+  source: >
+    Caputo, Prebianca, Carcangiu, Spano, Giachetti, "Comparing 3D trajectories for
+    simple mid-air gesture recognition", Computers & Graphics 73 (2018) 17-25.
+    Paper NOT READ (paywalled, ScienceDirect returns HTTP 403). Layer 1 rests on
+    the archive description page plus the authors' data/code repository
+    https://github.com/giach68/gesturesCodes, which I inspected directly.
+  provenance_confidence: medium
+translation:
+  transformation: [channel-selection]
+  what_the_x_axis_is: time
+  sampling: >
+    Leap Motion forefinger positions; consecutive samples in the authors' raw files
+    are 17-18 ms apart (~60 Hz). This data set keeps the x-coordinate only
+    (D1 of the three dimensions the archive split out) and leaves series at their
+    natural, variable length.
+  information_lost_or_added: >
+    Two of the three spatial coordinates are discarded, which is severe for a
+    stroke-shape task: several of the 26 gestures (e.g. the six poly3D variants)
+    differ only in the ordering of movements across axes. The explicit timestamp
+    column of the raw data is dropped, so the index is treated as uniform time.
+  label_semantics_changed: "no"
+benchmark_task:
+  description: >
+    Classify a variable-length series of one spatial coordinate of a mid-air
+    fingertip trajectory into 26 gesture classes, training on 8 subjects and testing
+    on 5 disjoint subjects.
+  is_same_as_original: narrowed
+verdict: native-tsc
+verdict_rationale: >
+  A genuinely temporal recording - fingertip position sampled at ~60 Hz with real
+  timestamps - unlike arc-length-resampled trajectory data; the only translation is
+  selecting one of the three spatial coordinates.
+known_issues:
+  - >
+    One repetition per (subject, gesture): 26 classes with 8 training examples each
+    (208 train / 130 test). The archive's own baselines are barely better than the
+    0.9615 default rate for D3 (1-NN ED error 0.6538, constrained DTW 0.6231).
+  - >
+    D1, D2 and D3 are the x, y and z coordinate of the *same* trajectories, so
+    results on them are not independent; the archive offers no multivariate version,
+    even though the natural problem is 3D (the raw CSVs in the authors' repository
+    are 3D).
+  - >
+    The archive drops the per-sample timestamp column present in the raw CSVs. Leap
+    Motion frame delivery is not perfectly uniform (17-18 ms between consecutive
+    samples in the file I inspected), so treating the index as uniform time is a
+    small but real approximation.
+  - >
+    Split provenance is inconsistent and should be checked by a human: the archive
+    says "We follow the original paper (see [2]) and use data of 8 subjects for
+    training and 5 subjects for testing", matching 208 = 8x26 train and 130 = 5x26
+    test - but in the authors' repository datasetNew/train_gestures.txt lists 5
+    subjects (andrea, chiara, claudio, elena, elenaf) and test_gestures.txt lists 8
+    (luca, martina, pinuccia, sabrina, stefano, emanuele, gianmarcocherchi, laerte),
+    i.e. the reverse assignment. The repository also contains 14 subject directories
+    (davide appears in neither list) against the 13 subjects the archive claims.
+  - >
+    The split is subject-disjoint, which is good, but the archive warns that this is
+    destroyed by the usual resampling protocol: "Data of a same subjects does not
+    appear in both train and test set, so resampling may introduce bias."
+  - >
+    Primary paper paywalled - provenance_confidence capped at medium.
+  - >
+    archive_type_tag: recorded here as HAR (site aggregate table); the archive's own
+    DataSummary.csv files GestureMidAirD1/D2/D3 under "Trajectory".
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.7538
+    acc_permuted: 0.6231
+    drop: 0.1308
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 5.3
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.7538
+    acc_raw_values: 0.4923
+    acc_summary_stats: 0.3692
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.2615
+    gap_summary: 0.3846
+    seed: 0
+    runtime_s: 5.8
+    run: '2026-09-04'
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=GestureMidAirD1
+  - Caputo, Prebianca, Carcangiu, Spano, Giachetti, "Comparing 3D trajectories for simple mid-air gesture recognition", Computers & Graphics 73 (2018) 17-25 - paywalled, NOT read
+  - https://github.com/giach68/gesturesCodes (authors' data and MATLAB code; datasetNew/*/*.csv and processCagliaritani.m inspected)
+  - Dau, Bagnall, Kamgar, Yeh, Zhu, Gharghabi, Ratanamahatana, Keogh, "The UCR Time Series Archive", arXiv:1810.07758 (PDF read)
+  - UCR archive DataSummary.csv (baseline error rates and archive type tags), cached at scripts/sources/ucr_DataSummary.csv

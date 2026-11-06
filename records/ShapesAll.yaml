@@ -1,0 +1,106 @@
+name: ShapesAll
+archive:
+- UCR
+archive_type_tag: IMAGE
+n_train: 600
+n_test: 600
+series_length: 512
+n_channels: 1
+n_classes: 60
+archive_page:
+  description: MPEG-7 CE Shape-1 Part B is a database of binary images developed for testing
+    MPEG-7 shape descriptors, and is available free online. It is used for testing contour/image
+    and skeleton-based descriptors. Classes of images vary broadly, and include classes that
+    are similar in shape to one another. There are 20 instances of each class, and 60 classes
+    in total. We have extracted the outlines of these images and mapped them into 1-D series
+    of distances to the centre. This set contains all the images, each class split evenly
+    between train and test
+  donated_by: J. Hills, A. Bagnall
+  data_source_link: http://www.dabi.temple.edu/~shape/MPEG7/dataset.html
+  second_link: ''
+original_problem:
+  description: >
+    The images come from MPEG-7 Core Experiment CE-Shape-1 Part B, a database
+    built to benchmark 2D shape descriptors for the MPEG-7 standard rather than
+    to solve an applied problem. Latecki et al. (CVPR 2000, Sec. 2.2): "The
+    total number of images in the database is 1400: 70 classes of various
+    shapes, each class with 20 images. Each image was used as a query, and the
+    number of similar images (which belong to the same class) was counted in
+    the top 40 matches (bulls-eye test)." The stated goal was robustness:
+    "The goal of the Core Experiment CE-Shape-1 is to evaluate the performance
+    of 2D shape descriptors under such conditions" (change of viewpoint,
+    non-rigid motion, digitization noise). UEA curators mapped 60 of these
+    classes into 1-D series.
+  prediction_target: shape class (60 object categories)
+  input_as_originally_posed: binary silhouette image with a single closed outer contour
+  task_family: image-classification
+  stakeholder_and_use: >
+    none applied; a standardisation benchmark for shape descriptors, re-used as
+    a TSC benchmark
+  source: >
+    Latecki, Lakamper & Eckhardt, "Shape Descriptors for Non-rigid Shapes with
+    a Single Closed Contour", CVPR 2000 (read). The outline-to-series mapping
+    is described only on the archive page (Hills & Bagnall, UEA); the shapelet
+    transform paper was not reachable in full text.
+  provenance_confidence: high
+
+translation:
+  transformation: [contour-unrolling, resampling, z-normalization]
+  what_the_x_axis_is: arc-length
+  sampling: >
+    Archive page: "We have extracted the outlines of these images and mapped
+    them into 1-D series of distances to the centre." 512 points per outline;
+    "This set contains all the images, each class split evenly between train and
+    test", i.e. 10 train / 10 test per class.
+  information_lost_or_added: >
+    Interior structure is absent by construction (the source images are
+    silhouettes); size is removed by z-normalization; object rotation becomes a
+    cyclic shift, so the representation loses exactly the rotation invariance
+    the CE-Shape-1 experiment required of descriptors.
+  label_semantics_changed: "no"
+
+benchmark_task:
+  description: Classify a length-512 outline series into one of 60 shape classes.
+  is_same_as_original: different-task
+  # CE-Shape-1 Part B posed similarity-based retrieval (bulls-eye score over 70
+  # classes); the archive poses 60-class supervised classification.
+
+verdict: translated-modality
+verdict_rationale: >
+  Silhouette images re-expressed as distance-to-centre against contour
+  arc-length; neither the source modality nor the axis is temporal.
+known_issues:
+  - 60 of the 70 CE-Shape-1 classes are used; which ten were dropped, and why, is not documented on the archive page.
+  - Only 10 training instances per class.
+  - BeetleFly and BirdChicken are drawn from the same MPEG-7 pool; if their classes are among the 60 kept here, the three datasets share instances and are not independent benchmarks (worth checking against the released files).
+  - Original protocol was retrieval, so archive accuracies are not comparable with published CE-Shape-1 results.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.9233
+    acc_permuted: 0.7783
+    drop: 0.145
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 6.9
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.9233
+    acc_raw_values: 0.6567
+    acc_summary_stats: 0.55
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.2667
+    gap_summary: 0.3733
+    seed: 0
+    runtime_s: 30.7
+    run: '2026-09-04'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=ShapesAll
+  - Latecki, Lakamper & Eckhardt, "Shape descriptors for non-rigid shapes with a single closed contour", CVPR 2000 - https://cis.temple.edu/~latecki/Papers/cvpr00.pdf
+  - MPEG-7 CE Shape-1 Part B dataset page - http://www.dabi.temple.edu/~shape/MPEG7/dataset.html
+  - Hills, Lines, Baranauskas, Mapp & Bagnall, "Classification of time series by shapelet transformation", DMKD 28:851-881, 2014 (full text not reached)

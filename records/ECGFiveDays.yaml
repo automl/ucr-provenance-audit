@@ -1,0 +1,119 @@
+name: ECGFiveDays
+archive:
+- UCR
+archive_type_tag: ECG
+n_train: 23
+n_test: 861
+series_length: 136
+n_channels: 1
+n_classes: 2
+archive_page:
+  description: "Data is from a 67 year old male. The two classes are simply \nECG date: 12/11/1990\
+    \ \nECG date: 17/11/1990"
+  donated_by: Y. Chen, E. Keogh
+  data_source_link: http://www.pamap.org
+  second_link: ''
+original_problem:
+  description: >
+    No original prediction problem is documented. The archive page says only "Data
+    is from a 67 year old male" and that "The two classes are simply ECG date:
+    12/11/1990 / ECG date: 17/11/1990". So the underlying data is a clinical ECG of
+    one man recorded on two dates five days apart, and the classification problem was
+    invented by the curators by labelling each beat with the date it was recorded on.
+    The archive's `data_source_link` points to www.pamap.org, which is the PAMAP
+    physical-activity-monitoring project and has nothing to do with ECG - the link
+    appears to be a curation error, so there is no working pointer to the recording's
+    provenance at all.
+  prediction_target: >
+    Which of two recording dates (12/11/1990 vs 17/11/1990) a heartbeat came from.
+    There is no clinical meaning to the label.
+  input_as_originally_posed: single-lead ECG of one 67-year-old male subject
+  task_family: clinical-diagnosis
+  stakeholder_and_use: >
+    None. The recording is clinical in origin but nobody needs a model that predicts
+    the calendar date of an ECG; the dataset exists purely as an algorithm benchmark.
+  source: >
+    timeseriesclassification.com description page only (read 2026-08). No paper,
+    thesis or database record was found; the supplied source link (www.pamap.org)
+    is unrelated to ECG.
+  provenance_confidence: low
+  # Missing: which hospital/database the recording came from, which lead, the
+  # sampling rate, why the man was recorded, and why two sessions five days apart
+  # exist. A verifier should try to trace the recording through Y. Chen / E. Keogh's
+  # earlier papers, since the same donors supplied ECG5000 from a PhysioNet record.
+
+translation:
+  transformation: [windowing, z-normalization]
+  what_the_x_axis_is: time
+  sampling: >
+    Continuous ECG cut into single beats of 136 samples. The sampling rate is not
+    stated anywhere on the archive page, so the real-time duration of a series is
+    undocumented.
+  information_lost_or_added: >
+    Beat-to-beat context is discarded by the windowing. More importantly, nothing was
+    done to remove the session-level nuisance factors (electrode placement, skin
+    impedance, amplifier gain, posture, time of day) that differ between two
+    recording sessions - and those factors are exactly what the label encodes.
+  label_semantics_changed: >
+    yes: the label is the recording date, a metadata field the curators attached to
+    each beat. It is not a property of the heartbeat and not a clinical category.
+
+benchmark_task:
+  description: >
+    Given a length-136 heartbeat from one 67-year-old man, decide whether it was
+    recorded on 12 November 1990 or on 17 November 1990.
+  is_same_as_original: different-task
+
+verdict: native-tsc
+verdict_rationale: >
+  The x-axis is time and the signal is a genuine ECG, so the decision rule gives
+  native-tsc; but the label is a recording-session identifier, which makes the
+  benchmark a session-discrimination problem dressed as an ECG problem.
+known_issues:
+  - >
+    The label is a date, so any session-level drift solves the task without any
+    cardiology: a shift in electrode position, a different gain setting, a different
+    posture or a change in the subject's state between the two days is a perfectly
+    good discriminator. High accuracy here is evidence of session drift, not of ECG
+    understanding. Say this before quoting a result on this dataset.
+  - >
+    Dau et al., "The UCR Time Series Archive" (arXiv:1810.07758), Table II, p. 9,
+    lists ECGFiveDays among twelve "solved" datasets where at least one algorithm
+    reaches 100% accuracy - consistent with the label being a session artifact.
+  - >
+    One subject, so no between-patient variation exists at all; and train and test
+    beats come from the same two recordings, so train/test independence fails.
+  - >
+    Only 23 training instances against 861 test instances; the split is a
+    small-training-set stress test, not a representative sample.
+  - >
+    The archive's own source link (www.pamap.org) is wrong, so provenance cannot be
+    checked from the archive page.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 1.0
+    acc_permuted: 0.9675
+    drop: 0.0325
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 5.4
+    run: '2026-09-03'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 1.0
+    acc_raw_values: 0.4971
+    acc_summary_stats: 0.4971
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.5029
+    gap_summary: 0.5029
+    seed: 0
+    runtime_s: 2.7
+    run: '2026-09-03'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=ECGFiveDays
+  - Dau et al., "The UCR Time Series Archive", arXiv:1810.07758 (Table II, p. 9; Sec. III-C, p. 3)

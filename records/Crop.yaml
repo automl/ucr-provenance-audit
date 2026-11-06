@@ -1,0 +1,111 @@
+name: Crop
+archive:
+- UCR
+archive_type_tag: IMAGE
+n_train: 7200
+n_test: 16800
+series_length: 46
+n_channels: 1
+n_classes: 24
+archive_page:
+  description: ''
+  donated_by: F. Petitjean
+  data_source_link: http://bit.ly/SDM2017
+  second_link: ''
+original_problem:
+  description: >
+    Land-cover / crop-type mapping from satellite image time series. Tan, Webb &
+    Petitjean (SDM 2017, Sec. on SITS classification) describe the source data:
+    "In this work, we used 46 geometrically and radiometrically corrected images
+    taken by FORMOSAT-2 satellite... Each geographic area (x,y) (~ pixel) in the
+    image forms a time series with a length of 46, creating a dataset with 1
+    million time series. The series have been manually collected by experts in
+    geoscience by a mix of photo-interpretation, ground campaigns and urban
+    databases. All time series thus have a label about their temporal class such
+    as 'wheat', 'maize', 'broad-leaved tree', etc." Their Table 1 gives length
+    46 and 24 classes, matching the archive record. The motivation is
+    operational: producing temporal land-cover maps at regional scale for
+    agriculture and environmental monitoring.
+  prediction_target: land-cover / crop class of a ground pixel (24 classes)
+  input_as_originally_posed: >
+    sequence of satellite reflectance observations for one 8 m ground pixel over
+    a growing season
+  task_family: remote-sensing
+  stakeholder_and_use: >
+    agricultural and environmental agencies producing land-cover maps (the data
+    were released with permission of CesBIO and the French Space Agency)
+  source: >
+    Tan, Webb & Petitjean, "Indexing and classifying gigabytes of time series
+    under time warping", SDM 2017 (read; the archive's data_source_link
+    bit.ly/SDM2017 resolves to the figshare project for this paper). The related
+    TempCNN paper (Pelletier, Webb & Petitjean, arXiv:1811.10166, Sec. 3.1-3.2)
+    describes the same imagery: "The satellite dataset is composed of 46
+    Formosat-2 images acquired at 8 meter spatial resolution during the year
+    2006", with reference data from "farmer's declaration from 2006... ground
+    field campaigns performed during 2006... and a reference map obtained with a
+    semi-automatic procedure" (that paper aggregates to 13 classes rather than 24).
+  provenance_confidence: high
+
+translation:
+  transformation: [channel-selection, z-normalization]
+  what_the_x_axis_is: time
+  sampling: >
+    46 Formosat-2 acquisitions across 2006 (irregular revisit within the year);
+    one value per acquisition per pixel. The source imagery has NIR/Red/Green
+    bands; which single band or index the univariate archive series uses is not
+    stated on the archive page and could not be verified.
+  information_lost_or_added: >
+    Spatial context around the pixel is dropped (each pixel is treated
+    independently), the multi-band signal is reduced to one channel, and
+    z-normalization removes the absolute reflectance level, which is physically
+    informative for land cover. The temporal axis itself is preserved intact.
+  label_semantics_changed: "no"
+
+benchmark_task:
+  description: >
+    Classify a length-46 per-pixel reflectance profile into one of 24 land-cover
+    classes.
+  is_same_as_original: narrowed
+  # Same task and labels as the source study; the archive uses a 24,000-instance
+  # subsample of the one-million-series collection.
+
+verdict: native-tsc
+verdict_rationale: >
+  The x-axis is genuine calendar time (46 satellite acquisitions over one year)
+  and the discriminating signal is crop phenology, so despite the archive's
+  IMAGE tag this is a real temporal problem.
+known_issues:
+  - 'archive_type_tag is IMAGE, which is misleading: the data are per-pixel temporal reflectance profiles from satellite imagery, not an image-to-series conversion.'
+  - Pixels come from a single 64 km2 scene; neighbouring pixels within the same field are near-duplicates, so the train/test split almost certainly does not separate fields and independence is questionable.
+  - The archive's 7200/16800 split is a subsample of the 1M-series source (which had no predefined split - the authors used 10-fold CV); how instances were selected and split is not documented.
+  - Labels come from a mix of farmer declarations, photo-interpretation and ground campaigns, with the usual polygon-level label noise of land-cover reference data.
+  - z-normalization removes absolute reflectance, a real discriminative signal in remote sensing.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.7663
+    acc_permuted: 0.7553
+    drop: 0.011
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 40.7
+    run: '2026-09-03'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.7663
+    acc_raw_values: 0.7655
+    acc_summary_stats: 0.6077
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.0008
+    gap_summary: 0.1586
+    seed: 0
+    runtime_s: 15.4
+    run: '2026-09-03'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=Crop
+  - Tan, Webb & Petitjean, "Indexing and classifying gigabytes of time series under time warping", SDM 2017 - https://francois-petitjean.com/Research/Petitjean2017-SDM.pdf
+  - Pelletier, Webb & Petitjean, "Temporal Convolutional Neural Network for the Classification of Satellite Image Time Series", arXiv:1811.10166

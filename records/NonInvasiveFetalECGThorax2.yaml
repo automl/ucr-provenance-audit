@@ -1,0 +1,141 @@
+name: NonInvasiveFetalECGThorax2
+archive:
+- UCR
+archive_type_tag: ECG
+n_train: 1800
+n_test: 1965
+series_length: 750
+n_channels: 1
+n_classes: 42
+archive_page:
+  description: "Each of them corresponds to the record of the ECG from left and\r\nright thorax.\
+    \ Hence, in this data set, each type of non-invasive\r\nfetal ECG corresponds to a 2D\
+    \ time series.      What\r\npaper is it from though?   Bing and Keogh  \r\nReformatted?\r\
+    \n     \r\n\r\nMaybe from here:  (Link Here)"
+  donated_by: E. Keogh
+  data_source_link: http://www.physionet.org/challenge/2013/
+  second_link: ''
+original_problem:
+  description: >
+    Non-invasive fetal electrocardiography: recovering the fetal ECG from electrodes
+    on the mother's body so that fetal heart rate and morphology can be monitored
+    without a scalp electrode. The clinical difficulty is that the maternal ECG
+    dominates the abdominal signal, which is why thoracic (maternal-only) channels
+    are recorded alongside abdominal ones - they give a reference for cancelling the
+    mother's heartbeat. The archive page does not identify the source publication;
+    it literally reads "What paper is it from though? Bing and Keogh Reformatted?
+    ... Maybe from here: (Link Here)", i.e. the curators themselves did not know.
+    Its `data_source_link` points at the PhysioNet/CinC Challenge 2013 (fetal QRS
+    detection), while the description - "the record of the ECG from left and right
+    thorax", two thoracic channels - matches PhysioNet's Non-Invasive Fetal ECG
+    Database (nifecgdb), whose page (read 2026-08) describes "a series of 55
+    multichannel abdominal fetal ECG recordings taken from a single subject over a
+    period of 20 weeks", each with "2 thoracic signals" and "3 or 4 abdominal
+    signals", at a "Sampling rate: 1kHz". These two candidate sources are mutually
+    inconsistent and neither was confirmed.
+  prediction_target: >
+    Undocumented. The archive gives 42 classes with no key. Neither the archive page
+    nor any source found states what a class is; the most plausible reading, given a
+    database of many recording sessions, is that each class is one recording/session
+    (and hence, if nifecgdb is the source, one gestational age of one mother), but
+    this is NOT verified and a verifier must establish it before the dataset is used
+    for any claim.
+  input_as_originally_posed: multichannel non-invasive (abdominal + thoracic) ECG of a pregnant woman
+  task_family: clinical-diagnosis
+  stakeholder_and_use: obstetricians / non-invasive fetal heart monitoring in pregnancy and labour
+  source: >
+    timeseriesclassification.com description page (which explicitly records the
+    curators' own uncertainty about the source), PhysioNet/CinC Challenge 2013 page
+    linked from it, and PhysioNet Non-Invasive Fetal ECG Database
+    (https://physionet.org/content/nifecgdb/1.0.0/, read 2026-08). No primary paper
+    was identified.
+  provenance_confidence: low
+  # Two candidate PhysioNet sources that disagree, no paper, and no class key. What
+  # would raise this: a document naming the source database and defining the 42
+  # classes. Until then, treat every number reported on this dataset as
+  # uninterpretable in domain terms.
+
+translation:
+  transformation: [channel-selection, windowing, z-normalization]
+  what_the_x_axis_is: time
+  sampling: >
+    Length-750 series. If the source is nifecgdb (1 kHz), that is 0.75 s, about one
+    cardiac cycle. The archive page does not state the rate, so this is inferred.
+  information_lost_or_added: >
+    The recordings are multichannel by design and the whole point of the modality is
+    to combine abdominal and thoracic channels to cancel the maternal ECG. This
+    dataset keeps a single thoracic channel (thorax 2) and presents it as a
+    univariate series, so the fetal signal - the reason the data exists - is not
+    recoverable from it at all. Windowing also removes rhythm and heart-rate
+    variability, which is the clinically monitored quantity.
+  label_semantics_changed: >
+    yes: whatever the 42 classes are, they are not the fetal-ECG-extraction problem
+    the recordings were made for; they are a curator-assigned grouping over
+    recordings.
+
+benchmark_task:
+  description: >
+    Classify a length-750 thoracic-ECG window (thorax 2 channel) into one of 42
+    unlabelled classes. 1800 train / 1965 test.
+  is_same_as_original: different-task
+
+verdict: unclear
+verdict_rationale: >
+  The data is a real electrocardiogram sampled in time, but the 42 classes have no
+  key in the archive or in any source found, so what the benchmark asks cannot be
+  stated (rule 5, which takes precedence over the modality rules).
+known_issues:
+  - >
+    The class semantics are unknown. The archive page contains the curators' own
+    unanswered questions about provenance. No result on this dataset can be
+    interpreted in domain terms until the 42 classes are defined.
+  - >
+    NonInvasiveFetalECGThorax1 and NonInvasiveFetalECGThorax2 are the left and right
+    thoracic channels of the SAME recordings, with identical split sizes
+    (1800/1965), identical length (750) and identical class count (42). They are not
+    two independent datasets: any benchmark that averages over the UCR 128 counts
+    this data twice, and a method's ranks on the two are strongly correlated by
+    construction.
+  - >
+    If the source is nifecgdb, all 55 recordings come from a single subject, so the
+    42 classes would be sessions of one woman and the task would be
+    session/gestational-age discrimination on one person - the same structural
+    problem as ECGFiveDays, but with 42 classes.
+  - >
+    Windows are cut from a small number of long recordings, so beats of the same
+    class in train and test come from the same recording; train/test independence is
+    questionable.
+  - >
+    Two conflicting source pointers (CinC Challenge 2013 vs nifecgdb) are attached to
+    the same description.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.9644
+    acc_permuted: 0.9384
+    drop: 0.026
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 8.4
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.9644
+    acc_raw_values: 0.9038
+    acc_summary_stats: 0.7501
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.0606
+    gap_summary: 0.2142
+    seed: 0
+    runtime_s: 25.3
+    run: '2026-09-04'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=NonInvasiveFetalECGThorax2
+  - https://www.timeseriesclassification.com/description.php?Dataset=NonInvasiveFetalECGThorax1
+  - https://physionet.org/content/nifecgdb/1.0.0/
+  - https://www.physionet.org/challenge/2013/
+  - Dau et al., "The UCR Time Series Archive", arXiv:1810.07758 (Sec. III-C, p. 3)

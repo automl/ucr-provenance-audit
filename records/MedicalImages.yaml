@@ -1,0 +1,108 @@
+name: MedicalImages
+archive:
+- UCR
+archive_type_tag: IMAGE
+n_train: 381
+n_test: 760
+series_length: 99
+n_channels: 1
+n_classes: 10
+archive_page:
+  description: 'The data are histograms of pixel intensity of medical images. The
+
+    classes are “different human body regions.” This dataset was
+
+    donated by Joaquim C. Felipe, Agma J. M. Traina and Caetano Traina
+
+    Jr'
+  donated_by: J. Felipe, C. Traina
+  data_source_link: ''
+  second_link: ''
+original_problem:
+  description: >
+    Content-based retrieval and classification of medical images by anatomical
+    region. The archive page is the only description: "The data are histograms of
+    pixel intensity of medical images. The classes are 'different human body
+    regions.' This dataset was donated by Joaquim C. Felipe, Agma J. M. Traina
+    and Caetano Traina Jr". Those authors worked on content-based image retrieval
+    for PACS - their CBMS 2003 paper (read) opens from that need: "The huge
+    amount of digital images generated in hospitals and health care centers leads
+    to the need of automatic storage and retrieval of them" - but that paper uses
+    texture features, not intensity histograms, and a later Felipe/Traina paper
+    (read) uses 704 MR images in 8 anatomical classes, which does not match this
+    record's 10 classes and 1141 instances. The specific study this dataset comes
+    from was not identified.
+  prediction_target: human body region depicted in the image (10 classes, unnamed in the archive)
+  input_as_originally_posed: medical image (modality unspecified; the donors' related work uses MR and X-ray images)
+  task_family: image-classification
+  stakeholder_and_use: hospital PACS systems - automatic organisation and retrieval of stored medical images
+  source: >
+    NOT IDENTIFIED. Consulted Felipe, Traina & Traina, "Retrieval by Content of
+    Medical Images Using Texture for Tissue Identification", CBMS 2003 (read) and
+    Felipe, Traina & Traina, "A New Family of Distance Functions for Perceptual
+    Similarity Retrieval of Medical Images" (read via PMC), neither of which
+    describes a 10-class, 99-bin intensity-histogram dataset. The archive page
+    gives no data_source_link.
+  provenance_confidence: low
+
+translation:
+  transformation: [z-normalization]
+  what_the_x_axis_is: index
+  sampling: >
+    99 values per instance, being the bins of a pixel-intensity histogram of the
+    image (per the archive page). No enum value in the schema covers
+    "image -> histogram"; the transformation list therefore records only the
+    archive-wide z-normalization, and the actual defining step is described here.
+  information_lost_or_added: >
+    All spatial structure is destroyed: a histogram is invariant to any
+    permutation of the image's pixels, so anatomy, shape and layout are gone and
+    only the global intensity distribution remains. Acquisition parameters
+    (exposure, windowing, modality) shift the whole histogram and are not
+    controlled for.
+  label_semantics_changed: "no"
+
+benchmark_task:
+  description: Classify a length-99 intensity histogram into one of 10 body-region classes.
+  is_same_as_original: narrowed
+  # Same body-region labels, but the classifier sees a histogram summary rather
+  # than the image the original retrieval system indexed.
+
+verdict: translated-modality
+verdict_rationale: >
+  The original input is a medical image and the released series is a global
+  intensity histogram of it; the axis is a bin index, not time.
+known_issues:
+  - 'Provenance unresolved: no publication describing this exact dataset was found, and the archive page gives no source link. The class names are not published.'
+  - 'Not a contour dataset despite the IMAGE tag and the cluster pattern: the series is a distributional summary, so neighbouring points are related only through intensity smoothness.'
+  - Histograms discard all spatial information, so a strong result here says nothing about image understanding; conversely a simple order-invariant summary should do well (a natural permutation-test candidate).
+  - Scanner/modality/exposure differences between classes are a plausible shortcut that cannot be audited from the released data.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.7908
+    acc_permuted: 0.7513
+    drop: 0.0395
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 6.7
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.7908
+    acc_raw_values: 0.6974
+    acc_summary_stats: 0.5605
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.0934
+    gap_summary: 0.2303
+    seed: 0
+    runtime_s: 7.8
+    run: '2026-09-04'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=MedicalImages
+  - Felipe, Traina & Traina, "Retrieval by Content of Medical Images Using Texture for Tissue Identification", CBMS 2003 - https://sites.icmc.usp.br/caetano/artigos/Felipe2003_CBMS_CBIRTextureMedicalImage.pdf
+  - Felipe, Traina & Traina, "A New Family of Distance Functions for Perceptual Similarity Retrieval of Medical Images" - https://pmc.ncbi.nlm.nih.gov/articles/PMC3043681/
+  - Dau et al., "The UCR Time Series Archive", arXiv:1810.07758

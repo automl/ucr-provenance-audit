@@ -1,0 +1,162 @@
+name: Lightning2
+archive:
+- UCR
+archive_type_tag: SENSOR
+n_train: 60
+n_test: 61
+series_length: 637
+n_channels: 1
+n_classes: 2
+archive_page:
+  description: 'The FORTE satellite detects transient electromagnetic events
+
+    associated with lightning using a suite of optical and
+
+    radio-frequency (RF) instruments. Data is collected with a sample
+
+    rate of 50 MHz for 800 microseconds. A Fourier transform is
+
+    performed on the input data to produce a spectrogram. The
+
+    spectrograms are then collapsed in frequency to produce a power
+
+    density time series, with 3181 samples in each time series. These
+
+    are then smoothed to produce series of length 637. Not exactly sure
+
+    what the two classes are.'
+  donated_by: D. Eads
+  data_source_link: http://proceedings.spiedigitallibrary.org/proceeding.aspx?articleid=894463
+  second_link: ''
+original_problem:
+  description: >
+    Los Alamos researchers working with the FORTE (Fast On-orbit Recording of
+    Transient Events) satellite needed to sort the enormous stream of recorded
+    electromagnetic transients into physical event types (cloud-to-ground return
+    strokes, intra-cloud events, and so on) automatically. Damian Eads and
+    colleagues used the problem as the driving application for "Zeus", a hybrid
+    genetic-programming feature extractor feeding a support vector machine. The
+    labels are lightning event types assigned by domain experts from the VHF
+    radiation signature.
+  prediction_target: >
+    lightning/transient event class; the archive's binary version's two classes
+    are NOT identified — the donor's own description says "Not exactly sure what
+    the two classes are"
+  input_as_originally_posed: >
+    VHF radio-frequency waveform recorded by the FORTE satellite, 800
+    microseconds sampled at 50 MHz
+  task_family: remote-sensing
+  # Satellite-borne instrument producing temporal profiles, which is what the
+  # `remote-sensing` value covers. The usual referent of that value is
+  # earth-observation vegetation/land profiles; here it is a space-based RF
+  # receiver observing atmospheric discharges. Flagged in the report as a
+  # borderline fit rather than forcing `other`.
+  stakeholder_and_use: >
+    atmospheric-science and nuclear-test-monitoring programmes that must
+    distinguish natural lightning transients from other RF events
+  source: >
+    The archive description (quoted verbatim in `archive_page.description`
+    above) is the donor's own account of the preprocessing: "Data is collected
+    with a sample rate of 50 MHz for 800 microseconds. A Fourier transform is
+    performed on the input data to produce a spectrogram. The spectrograms are
+    then collapsed in frequency to produce a power density time series, with
+    3181 samples in each time series. These are then smoothed to produce series
+    of length 637." The underlying study is Eads, Hill, Davis, Perkins, Ma,
+    Porter & Theiler, "Genetic algorithms and support vector machines for time
+    series classification", Proc. SPIE 4787, 2002. I could NOT read that paper:
+    it is paywalled on the SPIE Digital Library and I found no open copy, so the
+    account above rests on the donor-written archive page plus secondary
+    summaries of the SPIE abstract.
+  provenance_confidence: medium
+
+translation:
+  transformation: [spectrum-as-series, resampling]
+  # The chain is waveform -> spectrogram (a spectrum per time step) -> collapse
+  # over the frequency axis -> smooth/decimate. The result is indexed by time,
+  # but every value is an integral over a spectrum, so both `spectrum-as-series`
+  # and `resampling` are load-bearing here.
+  what_the_x_axis_is: time
+  sampling: >
+    Original acquisition: 50 MHz for 800 microseconds (40,000 samples). After
+    spectrogram formation and collapsing over frequency, 3181 power-density
+    samples spanning those 800 microseconds; after smoothing, 637 points, i.e.
+    roughly 1.26 microseconds per point.
+  information_lost_or_added: >
+    Substantial. Collapsing the spectrogram over frequency throws away the
+    entire spectral dimension — which frequencies carried the power, and hence
+    the dispersion signature that is physically diagnostic — leaving only total
+    power versus time. Phase is gone at the spectrogram step. The subsequent
+    smoothing from 3181 to 637 points removes fine temporal structure. The
+    x-axis nevertheless remains genuine elapsed time within the 800-microsecond
+    capture window.
+  label_semantics_changed: "no"
+
+benchmark_task:
+  description: >
+    Classify a length-637 power-density trace of a FORTE transient into one of
+    two (undocumented) classes.
+  is_same_as_original: narrowed
+  # A two-class restriction of the seven-class expert labelling used for
+  # Lightning7 and in the source study.
+
+verdict: native-tsc
+verdict_rationale: >
+  Although the series is a heavily processed power-density envelope rather than
+  the raw waveform, its index is elapsed microseconds within a real
+  electromagnetic transient, so the ordered axis is time.
+known_issues:
+  - >
+    THE CLASS MEANINGS ARE UNKNOWN. The archive's own description ends "Not
+    exactly sure what the two classes are." A benchmark whose labels nobody can
+    name cannot support any domain claim; a human verifier should either recover
+    the mapping from the Lightning7 class list or mark the dataset as
+    label-opaque.
+  - >
+    The primary source (Eads et al., Proc. SPIE 4787, 2002) is paywalled and was
+    not read; the preprocessing account comes from the donor-written archive page
+    only.
+  - >
+    Tiny dataset: 60 train / 61 test. Reported 1-NN DTW error (0.13 in the
+    cached UCR summary) rests on ~8 test errors, so differences between methods
+    are within noise.
+  - >
+    Lightning2 and Lightning7 are drawn from the same FORTE recording campaign
+    and the same preprocessing pipeline; they are not independent datasets. How
+    Lightning2's two classes relate to Lightning7's seven is undocumented.
+  - >
+    Series length 637 here vs 319 for Lightning7 despite the archive giving the
+    same "smoothed to produce series of length 637" account for both — one of
+    the two has undergone an extra, undocumented decimation.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.7541
+    acc_permuted: 0.7213
+    drop: 0.0328
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 5.3
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.7541
+    acc_raw_values: 0.6066
+    acc_summary_stats: 0.6721
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.1475
+    gap_summary: 0.082
+    seed: 0
+    runtime_s: 3.3
+    run: '2026-09-04'
+
+references:
+- https://www.timeseriesclassification.com/description.php?Dataset=Lightning2
+- >
+  Eads, Hill, Davis, Perkins, Ma, Porter & Theiler, "Genetic algorithms and
+  support vector machines for time series classification", Proc. SPIE 4787,
+  Applications and Science of Neural Networks, Fuzzy Systems and Evolutionary
+  Computation V, 2002, doi:10.1117/12.453526 — PAYWALLED, abstract page only
+- Dau et al., "The UCR Time Series Archive", arXiv:1810.07758

@@ -1,0 +1,155 @@
+name: FordB
+archive:
+- UCR
+archive_type_tag: SENSOR
+n_train: 3636
+n_test: 810
+series_length: 500
+n_channels: 1
+n_classes: 2
+archive_page:
+  description: 'This data was originally used in a competition in the IEEE World
+
+    Congress on Computational Intelligence, 2008. The classification
+
+    problem is to diagnose whether a certain symptom exists or does not
+
+    exist in an automotive subsystem. Each case consists of 500
+
+    measurements of engine noise and a classification. There are two
+
+    separate problems:
+
+
+    For FordB the training data were collected in typical operating
+
+    conditions, but the test data samples were collected under noisy
+
+    conditions.'
+  donated_by: A. Bagnall
+  data_source_link: http://home.comcast.net/~nn_classification/
+  second_link: ''
+original_problem:
+  description: >
+    The second, harder half of Ford's IEEE WCCI 2008 classification challenge.
+    The task is identical to FordA — decide from a 500-sample diagnostic batch
+    whether a fault symptom is present in an automotive subsystem — but the
+    challenge deliberately shifted the distribution: labelled data were recorded
+    in typical operating conditions while the held-out data were recorded under
+    noisy conditions. FordB is therefore a domain-shift / robustness problem
+    dressed as a classification problem, and that shift is the entire point of
+    the FordA/FordB pair.
+  prediction_target: >
+    whether a certain fault symptom exists in the automotive subsystem
+    (+1 exists / -1 does not)
+  input_as_originally_posed: >
+    a batch of 500 sequential samples of a measured variable recorded from an
+    automotive subsystem during one diagnostic session
+  task_family: device-monitoring
+  stakeholder_and_use: >
+    automotive manufacturers and service workshops needing diagnosis that
+    survives noisy real-world operating conditions
+  source: >
+    "Ford Classification Challenge", the competition's own website
+    (home.comcast.net/~nn_classification/, dead since ~2016; read via the
+    Internet Archive snapshot of 2008-07-06). Challenge section: "Data samples
+    from an automotive subsystem were collected in batches of 500 samples per
+    diagnostic session. The objective is a classifier that will determine
+    whether a certain symptom exists or does not exist after examining the
+    samples." On this dataset specifically: "Ford_B: Data samples of known
+    classification were collected in typical operating conditions, while data
+    samples of hidden classification were collected under noisy conditions." The
+    page also warns: "Note: the two data sets are not related to each other and
+    should not be mixed." Its table gives Ford_B: 3306 training, 330 validation,
+    810 test patterns — 3306 + 330 = 3636, exactly the archive's n_train, so UCR
+    merged the competition's train and validation sets and kept its test set.
+  provenance_confidence: high
+
+translation:
+  transformation: [z-normalization]
+  what_the_x_axis_is: time
+  sampling: >
+    500 consecutive samples of one measured variable per diagnostic session;
+    rate and units undisclosed. The competition states only that "sample n+1
+    occurs after sample n" and that the length "reflects the time available for
+    making the classification decision".
+  information_lost_or_added: >
+    No structural transformation; the archive series are the competition
+    sequences (train plus validation), z-normalized. Note that z-normalization
+    partially masks, but does not remove, the amplitude component of the
+    train/test noise shift that defines this dataset.
+  label_semantics_changed: "no"
+
+benchmark_task:
+  description: >
+    Classify a univariate length-500 engine-diagnostic series as symptom-present
+    or symptom-absent, where the test set was recorded under noisier operating
+    conditions than the training set.
+  is_same_as_original: "yes"
+  # Same labels and sequences; the competition's validation set was folded into
+  # training.
+
+verdict: native-tsc
+verdict_rationale: >
+  Consecutive samples of a physical variable measured over time during a
+  diagnostic session; the original problem was already sequence classification.
+known_issues:
+  - >
+    BY DESIGN the training and test sets come from different operating
+    conditions (typical vs noisy). Reporting FordB accuracy as if it measured
+    ordinary in-distribution classification skill is a category error: it
+    measures robustness to a covariate shift. This is the single most important
+    thing to know about the dataset and the archive page states it only in
+    passing.
+  - >
+    Because of that shift, cross-validating on the FordB training set will
+    grossly overestimate test accuracy, and the usual UCR practice of merging
+    and resplitting train+test destroys the property that makes the dataset
+    interesting.
+  - >
+    The competition explicitly warns "the two data sets are not related to each
+    other and should not be mixed"; combining FordA and FordB, or transferring
+    between them, is not sanctioned by the data owners.
+  - >
+    Provenance is deliberately opaque: no sampling rate, units, subsystem, or
+    symptom identity. The archive page's "500 measurements of engine noise" is
+    an unverified gloss — the competition page says only "the measured variable".
+  - >
+    Dau et al. 2019 (arXiv:1810.07758), Table I, list FordB among fourteen data
+    sets whose train/test split was REVERSED for the new (2018) archive; pre-
+    and post-2018 numbers are not comparable, and for FordB a reversal also
+    swaps which condition is the training condition.
+  - >
+    Session-level grouping is unknown, so within-condition train/test
+    independence cannot be checked.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.8198
+    acc_permuted: 0.5617
+    drop: 0.258
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 12.0
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.8198
+    acc_raw_values: 0.6531
+    acc_summary_stats: 0.5062
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.1667
+    gap_summary: 0.3136
+    seed: 0
+    runtime_s: 3.6
+    run: '2026-09-04'
+
+references:
+- https://www.timeseriesclassification.com/description.php?Dataset=FordB
+- >
+  "Ford Classification Challenge" competition website, IEEE WCCI 2008, archived
+  at https://web.archive.org/web/20080706192102/http://home.comcast.net/~nn_classification/
+- Dau et al., "The UCR Time Series Archive", arXiv:1810.07758

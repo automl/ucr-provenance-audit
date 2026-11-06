@@ -1,0 +1,150 @@
+name: PLAID
+archive:
+- UCR
+archive_type_tag: DEVICE
+n_train: 537
+n_test: 537
+series_length: variable
+n_channels: 1
+n_classes: 11
+archive_page:
+  description: 'PLAID stands for the Plug Load Appliance Identification Dataset. The data
+    are intended for load identification research. The first version of PLAID is named PLAID1,
+    collected in summer 2013. A second version of PLAID was collected in winter 2014 and released
+    under the name PLAID2.  This dataset comes from PLAID1. It includes current and voltage
+    measurements sampled at 30 kHz from 11 different appliance types present in more than
+    56 households in Pittsburgh, Pennsylvania, USA. Data collection took place during the
+    summer of 2013. Each appliance type is represented by dozens of different instances of
+    varying makes/models.  For each appliance, three to six measurements were collected for
+    each state transition. These measurements were then post-processed to extract a few-second-long
+    window containing both the steady-state operation and the startup transient )when available).  The
+    classes correspond to 11 different appliance types: air conditioner, compact flourescent
+    lamp, fridge, hairdryer, laptop, microwave, washing machine, bulb, vacuum, fan, heater.   We
+    pad NaN to the end of each time series to the length of the longest time series.  Data
+    created by Gao, Jingkun, et al. (see [1], [2], [3]). Data edited by Patrick Schafer and
+    Ulf Leser (see [4]).  [1] Gao, Jingkun, et al. "PLAID: a public dataset of high-resoultion
+    electrical appliance measurements for load identification research: demo abstract." proceedings
+    of the 1st ACM Conference on Embedded Systems for Energy-Efficient Buildings. ACM, 2014.  [2]  (Link
+    Here)   [3]  (Link Here)   [4] Schäfer, Patrick, and Ulf Leser. "Fast and accurate time
+    series classification with weasel." Proceedings of the 2017 ACM on Conference on Information
+    and Knowledge Management. ACM, 2017.'
+  donated_by: P. Schafer
+  data_source_link: http://www.plaidplug.com/
+  second_link: ''
+original_problem:
+  description: >
+    PLAID (Plug-Load Appliance Identification Dataset) was collected at Carnegie
+    Mellon to support load identification / non-intrusive load monitoring
+    research. The data descriptor states it is "a labelled dataset containing
+    records of the electrical voltage and current of domestic electrical
+    appliances obtained at a high sampling frequency (30 kHz)" collected "at 65
+    different locations in Pittsburgh, Pennsylvania (USA)", and motivates it by
+    the fact that "Identifying electrical appliances based on electrical
+    measurements is of importance in demand-side management applications for the
+    electrical power grid including automated load control, load scheduling and
+    non-intrusive load monitoring" (Medico et al. 2020, Abstract). The UCR
+    dataset uses the first release, PLAID1, collected in summer 2013.
+  prediction_target: appliance type (11 classes, e.g. fridge, microwave, hairdryer, heater)
+  input_as_originally_posed: >
+    high-frequency (30 kHz) current and voltage waveforms measured at the plug
+    during an appliance switch-on event
+  task_family: device-monitoring
+  stakeholder_and_use: >
+    Utilities and demand-side-management / NILM vendors that must infer which
+    appliances are running from electrical measurements; also smart-plug
+    manufacturers.
+  source: >
+    Gao, Giri, Kara, Berges, "PLAID: a public dataset of high-resolution
+    electrical appliance measurements for load identification research: demo
+    abstract", BuildSys 2014 (NOT read -- ACM DL returned 403, and the project
+    site www.plaidplug.com is dead, now a parked domain). Read instead the
+    open-access data descriptor for the same dataset family: Medico, De Baets,
+    Gao, Giri, Kara, Dhaene, Develder, Berges, Deschrijver, "A voltage and
+    current measurement dataset for plug load appliance identification in
+    households", Scientific Data 7, 49 (2020).
+  provenance_confidence: medium
+translation:
+  transformation:
+  - windowing
+  - channel-selection
+  what_the_x_axis_is: time
+  sampling: >
+    30 kHz -- three to four orders of magnitude faster than the household
+    profile datasets in this cluster; each record is a few seconds of waveform.
+    Medico et al. (Submetered appliances): "the activation is measured together
+    with some seconds of the steady state following this activation... The
+    recorded steady state duration ranges from 1 to 20 seconds." Series length
+    is therefore VARIABLE in the archive release.
+  information_lost_or_added: >
+    PLAID records both current and voltage; the univariate UCR version keeps a
+    single channel, discarding the voltage reference that power/phase features
+    are computed from. Records are event windows around a switch-on, so the
+    startup transient is over-represented relative to normal operation. The
+    archive states "We pad NaN to the end of each time series to the length of
+    the longest time series", which turns the (informative) record duration into
+    an explicit feature and forces every consumer to make its own imputation
+    decision.
+  label_semantics_changed: "no"
+benchmark_task:
+  description: >
+    Classify a variable-length, NaN-padded 30 kHz current waveform (537 train /
+    537 test) into one of 11 appliance types.
+  is_same_as_original: narrowed
+verdict: native-tsc
+verdict_rationale: >
+  Genuine electrical waveforms on a real time axis, used for the appliance
+  identification task PLAID was collected for; the curation only windows,
+  selects a channel and pads.
+known_issues:
+- >
+  Series length is variable and NaN-padded to the maximum length. Padding length
+  correlates with record duration and hence potentially with class, so a
+  classifier can score by reading the padding rather than the waveform; any
+  method that imputes or truncates changes the task.
+- >
+  Multiple records were collected per appliance instance ("three to six
+  measurements... for each state transition"), and the 537/537 split is not
+  documented as instance- or household-disjoint. The same physical appliance
+  almost certainly appears in both train and test -- an identity shortcut.
+- >
+  At 30 kHz the class information lives in waveform harmonics within a single
+  mains cycle, so this dataset is a very different object from the daily-profile
+  device datasets in the archive despite sharing the DEVICE tag; results are not
+  comparable across the two.
+- >
+  Primary source unreachable: the BuildSys 2014 demo abstract is behind ACM DL
+  (403) and the project site plaidplug.com no longer resolves to the dataset;
+  the exact composition of the UCR "PLAID1" subset (1074 records) could not be
+  verified against a primary listing.
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.9311
+    acc_permuted: 0.7393
+    drop: 0.1918
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 6.6
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.9311
+    acc_raw_values: 0.7523
+    acc_summary_stats: 0.8864
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.1788
+    gap_summary: 0.0447
+    seed: 0
+    runtime_s: 11.8
+    run: '2026-09-04'
+references:
+- https://www.timeseriesclassification.com/description.php?Dataset=PLAID
+- Medico et al., "A voltage and current measurement dataset for plug load appliance identification in households", Scientific Data 7, 49 (2020), https://www.nature.com/articles/s41597-020-0389-7
+- >
+  Gao, Giri, Kara, Berges, "PLAID: a public dataset of high-resolution
+  electrical appliance measurements for load identification research", BuildSys
+  2014 (NOT READ -- ACM DL 403)
+- 'http://www.plaidplug.com/ (dead: parked domain as of this drafting)'
+- Schaefer & Leser, "Fast and accurate time series classification with WEASEL", CIKM 2017 (data editors; not read)

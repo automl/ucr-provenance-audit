@@ -1,0 +1,144 @@
+name: DodgerLoopDay
+archive:
+- UCR
+archive_type_tag: SENSOR
+n_train: 78
+n_test: 80
+series_length: 288
+n_channels: 1
+n_classes: 7
+archive_page:
+  description: 'The traffic data are collected with the loop sensor installed on ramp for
+    the 101 North freeway in Los Angeles. This location is close to Dodgers Stadium; therefore
+    the traffic is affected by volume of visitors to the stadium. Missing values are represented
+    with NaN.  The classes are days of the week.  - Class 1: Sunday - Class 2: Monday - Class
+    3: Tuesday - Class 4: Wednesday - Class 5: Thursday - Class 6: Friday - Class 7: Saturday.
+    Data created by Ihler, Alexander, Jon Hutchins, and Padhraic Smyth (see [1][2][3]). Data
+    edited by Chin-Chia Michael Yeh.  [1] Ihler, Alexander, Jon Hutchins, and Padhraic Smyth.
+    "Adaptive event detection with time-varying poisson processes." Proceedings of the 12th
+    ACM SIGKDD international conference on Knowledge discovery and data mining. ACM, 2006.  [2]
+    “UCI Machine Learning Repository: Dodgers Loop Sensor Data Set.” UCI Machine Learning
+    Repository, archive.ics.uci.edu/ml/datasets/dodgers+loop+sensor.  [3] “Caltrans PeMS.”
+    Caltrans, pems.dot.ca.gov/.'
+  donated_by: C. Yeh
+  data_source_link: ''
+  second_link: ''
+original_problem:
+  description: >
+    Ihler, Hutchins & Smyth collected freeway loop-detector counts to study
+    *unsupervised event detection*: learning a time-varying Poisson model of
+    normal traffic so that anomalous bursts (crowds leaving Dodger Stadium after
+    a baseball game) can be flagged without being told when games occurred.
+    Nobody in the original study wanted to predict the day of the week; the
+    day-of-week structure was the periodic *background* their model had to
+    explain away. The seven-class weekday label used here was constructed later
+    by the archive curator from each day's calendar date.
+  prediction_target: >
+    day of the week (Sunday..Saturday) on which a 24-hour on-ramp traffic
+    profile was recorded
+  input_as_originally_posed: >
+    counts of vehicles crossing an inductive loop detector on a freeway on-ramp,
+    aggregated into 5-minute bins
+  task_family: demand-and-load-analysis
+  stakeholder_and_use: >
+    traffic operations / event detection (Caltrans PeMS-style monitoring); for
+    the day-of-week label specifically there is no real stakeholder, since the
+    calendar already supplies the answer
+  source: >
+    Ihler, Hutchins & Smyth, "Learning to Detect Events with Markov-Modulated
+    Poisson Processes", ACM TKDD 1(3), Art. 13, 2007 (journal version of the
+    KDD 2006 paper the archive cites; read in full), Sec. 3, p. 6: "The second
+    dataset will be referred to as the freeway traffic data and consists of
+    estimated vehicle counts every 5 minutes over 6 months from an inductive
+    loop-sensor located on the Glendale on-ramp to the 101-North freeway in Los
+    Angeles." Same page: "the baseball-related events at this on-ramp correspond
+    to traffic leaving at the end of a game". The UCI "Dodgers Loop Sensor" page
+    (read) confirms "Loop sensor data was collected for the Glendale on ramp for
+    the 101 North freeway in Los Angeles", 288 five-minute observations per day
+    over 25 weeks, and states the goal as predicting "the presence of a baseball
+    game at Dodgers stadium".
+  provenance_confidence: high
+
+translation:
+  transformation: [windowing]
+  what_the_x_axis_is: time
+  sampling: >
+    Vehicle counts in 5-minute bins; one instance = one calendar day = 288 bins
+    (24 h). Missing bins are left as NaN in the archive files.
+  information_lost_or_added: >
+    The continuous 6-month count stream is cut at midnight into calendar days,
+    which imposes a boundary that the traffic process does not have (late-night
+    post-game traffic is split across two instances). Counts are otherwise
+    preserved; the archive keeps NaNs rather than imputing.
+  label_semantics_changed: >
+    yes: the label is not an observed property of the signal but the calendar
+    weekday of the recording, derived by the curator from the timestamp of each
+    day-long window.
+
+benchmark_task:
+  description: >
+    Given a 288-point 24-hour on-ramp traffic profile (with missing values),
+    predict which day of the week it is.
+  is_same_as_original: different-task
+  # The original problem was unsupervised detection of stadium events; the
+  # benchmark asks a supervised calendar-recovery question over the same data.
+
+verdict: native-tsc
+verdict_rationale: >
+  The values are genuine 5-minute traffic counts indexed by elapsed time, so
+  despite the curator-derived labels the input is a real time series.
+known_issues:
+  - >
+    Labels are curator-derived from timestamps, not independently observed; the
+    "ground truth" is the calendar.
+  - >
+    Non-independence across the DodgerLoop* family: DodgerLoopDay,
+    DodgerLoopGame and DodgerLoopWeekend all contain 158 instances and are the
+    SAME 158 daily windows of one loop-detector recording, relabelled three
+    ways. Results on the three are not independent evidence, and a model tuned
+    on one has effectively seen the others' data.
+  - >
+    All instances are consecutive windows of a single recording at a single
+    sensor over ~6 months, so train and test days share season, roadworks, and
+    the same Dodgers home stand; train/test independence is questionable.
+  - >
+    Missing values (NaN) are present, which is unusual for the UCR archive and
+    silently breaks many baselines.
+  - >
+    Only 78 training days across 7 classes (~11 per class) and a test default
+    rate of 0.84 (cached UCR summary).
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.6234
+    acc_permuted: 0.5584
+    drop: 0.0649
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 9.3
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.6234
+    acc_raw_values: 0.5065
+    acc_summary_stats: 0.4286
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.1169
+    gap_summary: 0.1948
+    seed: 0
+    runtime_s: 3.0
+    run: '2026-09-04'
+
+references:
+- https://www.timeseriesclassification.com/description.php?Dataset=DodgerLoopDay
+- >
+  Ihler, Hutchins & Smyth, "Learning to Detect Events with Markov-Modulated
+  Poisson Processes", ACM TKDD 1(3), Article 13, 2007
+- >
+  Ihler, Hutchins & Smyth, "Adaptive event detection with time-varying Poisson
+  processes", KDD 2006 (cited by the archive; read via its TKDD journal version)
+- https://archive.ics.uci.edu/dataset/157/dodgers+loop+sensor
+- Dau et al., "The UCR Time Series Archive", arXiv:1810.07758

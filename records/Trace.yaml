@@ -1,0 +1,180 @@
+name: Trace
+archive:
+- UCR
+archive_type_tag: SENSOR
+n_train: 100
+n_test: 100
+series_length: 275
+n_channels: 1
+n_classes: 4
+archive_page:
+  description: 'This 4-class dataset is a subset of the Transient Classification
+
+    Benchmark (trace project), an initiative at the turn of the century
+
+    to collate data from the application domain of the process industry
+
+    (e.g. nuclear, chemical, etc.). It is a synthetic dataset designed
+
+    to simulate instrumentation failures in a nuclear power plant,
+
+    created by Davide Roverso. The full dataset consists of 16 classes,
+
+    50 instances in each class. Each instance has 4 features.
+
+
+    The TRACE subset only uses the second feature of class 2 and the
+
+    third feature of class 3 and 7. Hence, this dataset contains 200
+
+    instances, 50 for each class. All instances are linearly
+
+    interpolated to have the same length of 275 data points, and are
+
+    z-normalized.'
+  donated_by: D. Roverso
+  data_source_link: http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.33.7261&rep=rep1&type=pdf
+  second_link: ''
+original_problem:
+  description: >
+    A benchmark for process-industry transient diagnosis. Davide Roverso, working
+    in the OECD Halden Reactor Project's soft-computing line, generated a
+    Transient Classification Benchmark: simulated instrumentation-failure
+    transients in a nuclear power plant, 16 fault classes with 50 four-feature
+    instances each, intended as common ground for comparing neural and fuzzy
+    transient classifiers. The applied question behind it is real — an operator
+    must recognize which transient a plant has entered, early — but the data
+    themselves are simulator output, not plant recordings.
+  prediction_target: >
+    which simulated plant transient / instrumentation-failure class an
+    instrument trace belongs to (the archive uses a 4-class subset)
+  input_as_originally_posed: >
+    simulated instrument traces from a nuclear-power-plant process simulator,
+    four measured features per transient
+  task_family: synthetic-demo
+  # The traces are simulator output created to benchmark classifiers, not
+  # measurements of a real plant. The motivating domain is real, but no real
+  # process produced these values.
+  stakeholder_and_use: >
+    none directly (simulated benchmark data); the motivating stakeholder is
+    nuclear/process-plant operations, where transient identification supports
+    operator decision aids
+  source: >
+    timeseriesclassification.com description page (quoted verbatim in
+    `archive_page.description` above), which is the donor's own account:
+    "This 4-class dataset is a subset of the Transient Classification Benchmark
+    (trace project), an initiative at the turn of the century to collate data
+    from the application domain of the process industry (e.g. nuclear, chemical,
+    etc.). It is a synthetic dataset designed to simulate instrumentation
+    failures in a nuclear power plant, created by Davide Roverso. The full
+    dataset consists of 16 classes, 50 instances in each class. Each instance
+    has 4 features. The TRACE subset only uses the second feature of class 2 and
+    the third feature of class 3 and 7. Hence, this dataset contains 200
+    instances, 50 for each class. All instances are linearly interpolated to
+    have the same length of 275 data points, and are z-normalized."
+    I could NOT read Roverso's primary publication: the archive's CiteSeerX link
+    (doi 10.1.1.33.7261) now resolves only to a Wayback error page, and the
+    corresponding journal article (Roverso, "Soft computing tools for transient
+    classification", Information Sciences 127(3-4), 2000) is behind Elsevier's
+    paywall (HTTP 403). The synthetic origin therefore rests on the donor-written
+    archive page alone.
+  provenance_confidence: medium
+
+translation:
+  transformation: [simulation, channel-selection, resampling, z-normalization]
+  what_the_x_axis_is: time
+  sampling: >
+    Simulated process time. Instances were "linearly interpolated to have the
+    same length of 275 data points", so the original sampling grid and the
+    physical duration of a transient are not recoverable from the archive files.
+  information_lost_or_added: >
+    ADDED: everything — the values come from a plant simulator, so the noise
+    model, fault dynamics and sensor characteristics are all modelling choices.
+    LOST: three of the four features per transient, and twelve of the sixteen
+    classes; the archive keeps only one selected feature from each of three
+    source classes (feature 2 of class 2, feature 3 of classes 3 and 7), which
+    means two of the archive's four classes come from the SAME simulated feature
+    of two different faults. Linear interpolation to a common length erases
+    duration differences between transients, which in a real diagnosis setting
+    would themselves be diagnostic.
+  label_semantics_changed: >
+    unclear: the donor's account calls the 4-class dataset "a subset" of
+    Roverso's 16 fault classes, so the classes are read as Roverso's fault
+    classes (author ruling 2026-11-04). It names only three source classes for
+    four archive classes, so whether any archive class is instead a curator-chosen
+    (feature, source-class) pair is undocumented.
+
+benchmark_task:
+  description: >
+    Classify a length-275 simulated instrument trace into one of four
+    curator-selected classes.
+  is_same_as_original: narrowed
+  # A small hand-picked subset of the original 16-class, 4-feature benchmark.
+
+verdict: synthetic
+verdict_rationale: >
+  Per the verdict decision rule, `task_family: synthetic-demo` yields
+  `synthetic`: the traces are simulator output designed to exercise transient
+  classifiers, with no measurement of a real plant behind them.
+known_issues:
+  - >
+    Fully simulated data. Results here say nothing about performance on real
+    plant instrumentation, and the simulator's assumptions are not documented
+    anywhere reachable.
+  - >
+    The primary source could not be read: the archive's CiteSeerX link is dead
+    and the Information Sciences paper is paywalled. Everything about the
+    generation process comes from the donor-written archive page.
+  - >
+    Dau et al. 2019 (arXiv:1810.07758), Table II, list Trace among twelve
+    "solved" data sets on which at least one algorithm reaches 100% accuracy;
+    the cached UCR summary shows 1-NN DTW (w=100) error 0.0000. It carries
+    almost no signal for method comparison.
+  - >
+    The curators' subsetting mixes features and classes: two of the four
+    archive classes are the same simulated feature drawn from two different
+    faults. The archive's class labels therefore do not correspond one-to-one to
+    Roverso's fault classes.
+  - Small and perfectly balanced by construction (50 per class, 100/100 split).
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 1.0
+    acc_permuted: 0.99
+    drop: 0.01
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 5.2
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 1.0
+    acc_raw_values: 0.76
+    acc_summary_stats: 0.98
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.24
+    gap_summary: 0.02
+    seed: 0
+    runtime_s: 3.0
+    run: '2026-09-04'
+
+references:
+- https://www.timeseriesclassification.com/description.php?Dataset=Trace
+- >
+  Roverso, "Soft computing tools for transient classification", Information
+  Sciences 127(3-4):137-156, 2000 — PAYWALLED (HTTP 403), not read; the
+  archive's CiteSeerX link (doi 10.1.1.33.7261) is dead
+- >
+  Roverso, "Neural and fuzzy transient classification systems: general techniques
+  and applications in nuclear power plants", in Ruan (ed.), Fuzzy Systems and Soft
+  Computing in Nuclear Engineering, Springer 2000, pp. 208-234 — ABSTRACT ONLY read
+  (https://www.osti.gov/etdeweb/biblio/20032983, 2026-11-04): research "initiated by the
+  need of finding new principled methods to perform alarm structuring/suppression in a
+  nuclear power plant alarm system"; "A systematic study was carried out with the aim
+  of comparing alternative neural network designs and models" on BWR transients and
+  "PWR transients corresponding to various occurrences of rapid load rejection events".
+  No simulator, class list or benchmark named; full texts refused (HTTP 403).
+- Dau et al., "The UCR Time Series Archive", arXiv:1810.07758

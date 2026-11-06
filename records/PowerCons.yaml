@@ -1,0 +1,132 @@
+name: PowerCons
+archive:
+- UCR
+archive_type_tag: DEVICE
+n_train: 180
+n_test: 180
+series_length: 144
+n_channels: 1
+n_classes: 2
+archive_page:
+  description: 'The PowerCons dataset contains the individual household electric power consumption
+    in one year distributed in two season classes:  warm (class 1) and cold (class 2), depending
+    on whether the power consumption is recorded during the warm seasons (from April to September)
+    or the cold seasons (from October to March). Note that the electric power consumption
+    profiles differ markedly within classes. The sampling rate is every ten-minute over a
+    period of one year.   Number of classes: 2 - Class 1: Warm season - Class 2: Cold season  Missing
+    value: No  Source: EDF R&D, Clamart, France'
+  donated_by: EDF
+  data_source_link: ''
+  second_link: ''
+original_problem:
+  description: >
+    The underlying data are individual-household electric power consumption
+    readings attributed by the archive to "EDF R&D, Clamart, France" -- i.e. the
+    research arm of the French utility, which meters households to study
+    consumption and support load forecasting and demand analysis. No paper
+    posing a classification problem on these data could be found: the warm/cold
+    season label is a curator construction from the recording date, exactly
+    analogous to ItalyPowerDemand. What the utility actually wanted from the
+    data (forecasting, tariff design, appliance studies) is not documented
+    anywhere I could reach.
+  prediction_target: >
+    season in which the day was recorded (class 1 = warm, April-September;
+    class 2 = cold, October-March)
+  input_as_originally_posed: continuous electric power consumption meter readings for one household
+  task_family: demand-and-load-analysis
+  stakeholder_and_use: >
+    Utility load analysts use household demand curves for forecasting and
+    planning; nobody needs to infer the season from a load curve, since the date
+    is always known -- the task is a curator-built proxy.
+  source: >
+    timeseriesclassification.com description page only ("Source: EDF R&D,
+    Clamart, France"; "The sampling rate is every ten-minute over a period of
+    one year"). NO primary publication for PowerCons was located despite
+    targeted searching. The UCI "Individual household electric power
+    consumption" dataset was donated by Georges Hebrail and Alice Berard from
+    the same EDF R&D Clamart group (UCI page read: one-minute readings from a
+    house in Sceaux, December 2006 - November 2010) and is a plausible parent,
+    but the sampling rate and the one-year span do not match, so the link is
+    UNCONFIRMED and must not be treated as provenance.
+  provenance_confidence: low
+translation:
+  transformation:
+  - windowing
+  what_the_x_axis_is: time
+  sampling: >
+    One 24-hour window per series: 144 readings at 10-minute intervals.
+    360 series split 180 train / 180 test, but only 230 are unique (see
+    known_issues), so at most 230 distinct days underlie the dataset.
+  information_lost_or_added: >
+    A single year of one household's continuous consumption is sliced into daily
+    windows, so all instances come from the same meter and the same year;
+    day-to-day and weekly context is discarded. The class label is attached from
+    the calendar, so what a model can learn is the seasonal shift of daily
+    routine (heating, lighting hours, air conditioning), confounded with
+    weekday/weekend and holiday structure that is not labelled.
+  label_semantics_changed: >
+    yes: the warm/cold season label was derived by the curators from the
+    timestamp of each day; it was not part of the original data collection and
+    no external ground truth defines it.
+benchmark_task:
+  description: >
+    Classify a 144-point daily household load curve as belonging to the warm
+    half (Apr-Sep) or the cold half (Oct-Mar) of the year.
+  is_same_as_original: different-task
+verdict: native-tsc
+verdict_rationale: >
+  The measurements are genuine 10-minute household power consumption on a real
+  time axis, so the modality is native; the qualification is that the label is a
+  curator-derived calendar attribute rather than a problem anyone posed.
+known_issues:
+- >
+  Label derived from metadata (the recording date), not from external ground
+  truth -- the same pattern as ItalyPowerDemand. The class boundary (1 April /
+  1 October) is arbitrary with respect to actual weather.
+- >
+  Exact duplicate series with train/test leakage: only 230 of the 360 series
+  are unique (94 duplicate pairs, 18 triples; exact to full float64 precision),
+  and 67 of the 180 test series are value-identical to a training series.
+  Duplicates never cross class labels. Verified twice independently from the
+  shipped data (aeon load, 2026-08-26).
+- >
+  Beyond the duplicates, all series are windows of one household's single year,
+  so train and test days are drawn from the same underlying process, sometimes
+  adjacent days; i.i.d. train/test independence is not supported and the
+  effective sample size is far below 360.
+- >
+  No primary source found: provenance rests entirely on one line of the archive
+  description page ("Source: EDF R&D, Clamart, France"). The apparent link to
+  the UCI Individual Household Electric Power Consumption dataset (same EDF R&D
+  Clamart origin) is my inference and is contradicted by the sampling rate; it
+  must be verified or dropped, not repeated.
+- >
+  Nothing states whether the split is random over days or chronological; a
+  random split over one year makes the task substantially easier.
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.9944
+    acc_permuted: 0.9889
+    drop: 0.0056
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 5.6
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.9944
+    acc_raw_values: 0.9889
+    acc_summary_stats: 0.9111
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.0056
+    gap_summary: 0.0833
+    seed: 0
+    runtime_s: 3.0
+    run: '2026-09-04'
+references:
+- https://www.timeseriesclassification.com/description.php?Dataset=PowerCons
+- https://archive.ics.uci.edu/dataset/235/individual+household+electric+power+consumption (candidate related EDF R&D Clamart dataset; link to PowerCons UNCONFIRMED)
+- Keogh et al., ICDM 2006 (Intelligent Icons) -- cited only as the precedent for the same curator-derived season label in ItalyPowerDemand

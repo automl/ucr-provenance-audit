@@ -1,0 +1,147 @@
+name: SonyAIBORobotSurface2
+archive:
+- UCR
+archive_type_tag: SENSOR
+n_train: 27
+n_test: 953
+series_length: 65
+n_channels: 1
+n_classes: 2
+archive_page:
+  description: 'This dataset was donated by Manuela Veloso and Douglas Vail of
+
+    Carnegie Mellon University. The robot has roll/pitch/yaw
+
+    accelerometers. This data is just the X-axis. The task is to detect
+
+    the surface being walked on (cement or carpet/field for Sony2).'
+  donated_by: M. Veloso, D. Vail
+  data_source_link: http://www.cs.ucr.edu/~mueen/LogicalShapelet/
+  second_link: ''
+original_problem:
+  description: >
+    Vail & Veloso wanted a legged robot to recognize what it is walking on, so
+    that it can switch to a gait parameter set tuned for that surface. A Sony
+    AIBO ERS-210a marched in place on each of three surfaces — a cement floor,
+    the carpet in their lab, and the carpet of a RoboCup field — while its
+    internal three-axis accelerometer logged acceleration; a one-second sliding
+    window of summary statistics fed a C4.5 decision tree that predicted the
+    surface online. This UCR dataset is the second two-class cut of
+    that recording set: cement vs carpet/field, using only the X axis.
+  prediction_target: walking surface under the robot (cement vs carpet/field)
+  input_as_originally_posed: >
+    three-axis accelerometer stream from a walking Sony AIBO ERS-210a quadruped
+    robot
+  task_family: activity-recognition
+  # Body-worn (robot-borne) motion sensing classified by what the motion is;
+  # the closest fit in the vocabulary, though the "activity" here is the
+  # substrate rather than the gait.
+  stakeholder_and_use: >
+    legged-robot developers doing online gait adaptation — Vail & Veloso frame
+    it as choosing "a pregenerated set of parameters for movement on each
+    particular surface"
+  source: >
+    Vail & Veloso, "Learning from Accelerometer Data on a Legged Robot", 5th
+    IFAC/EURON Symposium on Intelligent Autonomous Vehicles, 2004 (read in
+    full). Sec. 1.1: "In addition to its camera, the robot also has an
+    accelerometer. The accelerometer returns a real valued estimate of the
+    robot's acceleration along the x, y, and z axes. The values are limited to
+    the range of [-2,2] gravities for each axis and are sampled at 125 hertz. We
+    define positive x as the direction that the robot is facing". Sec. 2: "We
+    present experimental results showing the robots performance discriminating
+    between a cement floor, the carpet in our laboratory, and the carpet on a
+    RoboCup field." Sec. 2.2: "To test our surface prediction algorithm, we
+    gathered five minute segments of accelerometer readings while the robot
+    marched in place on each surface." Sec. 2.1: "Since the data arrives as a
+    stream, we window it into discrete chunks when creating the feature vector
+    for the classifier... We chose to use a one second sliding window."
+  provenance_confidence: high
+
+translation:
+  transformation: [channel-selection, windowing, z-normalization]
+  what_the_x_axis_is: time
+  sampling: >
+    Accelerometer sampled at 125 Hz (Vail & Veloso, Sec. 1.1); only the X axis
+    is retained. The archive instances are 65 points long, i.e. about 0.52
+    seconds of walking each.
+  information_lost_or_added: >
+    Two of the three accelerometer axes are discarded, so the vertical impact
+    signature — arguably the most informative channel for substrate hardness —
+    is not in the data. Each instance is a sub-second window cut from a
+    five-minute continuous recording, so gait-cycle phase within a window is
+    arbitrary. Z-normalization removes the absolute acceleration scale.
+  label_semantics_changed: "no"
+  # The surface is a genuine externally-known condition of the recording, as in
+  # the source study.
+
+benchmark_task:
+  description: >
+    Classify a length-65 single-axis accelerometer window as recorded on cement
+    or on carpet/field.
+  is_same_as_original: narrowed
+  # Same labels and modality; reduced from three surfaces to two (with the two
+  # carpeted surfaces evidently pooled) and from three axes to one.
+
+verdict: native-tsc
+verdict_rationale: >
+  Raw accelerometer samples from a walking robot, indexed by elapsed time at 125
+  Hz; the original problem was already online classification of this signal.
+known_issues:
+  - >
+    Windowed slices of one continuous five-minute recording per surface, so
+    every instance of a class is a sub-second cut of the same session. Train and
+    test windows are neighbours in time; train/test independence is weak, and
+    the original authors themselves used blocked cross-validation ("we divided
+    the data into ten 30 second segments") rather than random splits precisely
+    because of this.
+  - >
+    Identity shortcut in the strongest form: one robot, one session per surface.
+    Anything session-specific (battery level, joint wear, floor patch, the
+    robot's exact gait parameters that day) is perfectly confounded with class.
+  - >
+    Only the X axis is released, though the source study used features from all
+    three axes; the archive task is harder than, and not comparable to, the
+    published one.
+  - >
+    Very small training set (27) against 953 test instances.
+  - >
+    Relationship to SonyAIBORobotSurface1 is undocumented in the archive: both
+    come from the same Vail & Veloso recordings but differ in series length (65
+    vs 70), split sizes, and which surfaces the two classes cover (Sony1: cement
+    vs carpet; Sony2: cement vs carpet/field). They must not be treated as
+    independent evidence, and it is not documented whether the two share
+    instances outright — a human verifier should check the raw files for
+    overlap.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.9213
+    acc_permuted: 0.8353
+    drop: 0.086
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 5.4
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.9213
+    acc_raw_values: 0.617
+    acc_summary_stats: 0.617
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.3043
+    gap_summary: 0.3043
+    seed: 0
+    runtime_s: 3.3
+    run: '2026-09-04'
+
+references:
+- https://www.timeseriesclassification.com/description.php?Dataset=SonyAIBORobotSurface2
+- >
+  Vail & Veloso, "Learning from Accelerometer Data on a Legged Robot", 5th
+  IFAC/EURON Symposium on Intelligent Autonomous Vehicles, 2004;
+  https://www.cs.cmu.edu/~dvail2/pubs/vail04learning.pdf
+- http://www.cs.ucr.edu/~mueen/LogicalShapelet/ (archive's data source link)
+- Dau et al., "The UCR Time Series Archive", arXiv:1810.07758

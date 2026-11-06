@@ -1,0 +1,175 @@
+name: StarLightCurves
+archive:
+- UCR
+archive_type_tag: SENSOR
+n_train: 1000
+n_test: 8236
+series_length: 1024
+n_channels: 1
+n_classes: 3
+archive_page:
+  description: 'Clustering of Star Light A starlight curve is a time series of brightness
+    of a celestial
+
+    object as a function of time. The study of light curves in
+
+    astronomy is associated with the study of variability of
+
+    sources.
+
+
+    This is a dataset with 1,000 (purportedly) phase-aligned starlight
+
+    curves of length 1,024, whose class has been determined by an
+
+    expert.'
+  donated_by: E. Keogh, L. Wei
+  data_source_link: http://arxiv.org/abs/0905.3428
+  second_link: http://www.cs.ucr.edu/~eamonn/VLDB2006_Expanded.pdf
+original_problem:
+  description: >
+    Automated classification of variable stars. Sky surveys produce brightness
+    measurements of hundreds of millions of celestial objects, far more than
+    astronomers can inspect; the standing task is to assign each variable star
+    to its physical type from the shape of its light curve. Pavlos Protopapas
+    and colleagues at the Harvard Time Series Center supplied an expert-labelled
+    set to Keogh and Wei, who used it to show that their rotation-invariant
+    shape-matching index applied to light curves as well as to outlines.
+  prediction_target: >
+    variable-star class (three classes; their names are not documented in the
+    linked sources - the archive page only says "whose class has been
+    determined by an expert")
+  input_as_originally_posed: >
+    a photometric light curve — brightness of a star measured repeatedly over
+    weeks to years by a sky survey
+  task_family: astronomical-photometry
+  # Astronomical variable-star classification. No enum value fits: it is not
+  # remote-sensing in the earth-observation sense, not device-monitoring, not
+  # clinical. Flagged for the vocabulary owner; a domain-agnostic
+  # `astronomical-photometry` value would cover this and several sibling
+  # datasets.
+  stakeholder_and_use: >
+    survey astronomy — automated catalogue construction and anomaly triage for
+    surveys producing more light curves than can be inspected by hand
+  source: >
+    Keogh, Wei, Xi, Lee & Vlachos, "LB_Keogh Supports Exact Indexing of Shapes
+    under Rotation Invariance with Arbitrary Representations and Distance
+    Measures", VLDB 2006 (expanded version, read in full at
+    cs.ucr.edu/~eamonn/VLDB2006_Expanded.pdf), Sec. 2.4 "Indexing Star Light
+    Curves": "A star light curve is a time series of brightness of a celestial
+    object as a function of time." And, decisively for the x-axis: "There are
+    two things which make this difficult. First is the enormous volume of data,
+    the second is the fact that while is it possible to extract a single period
+    of a light curve, there is no natural starting point. In order the find the
+    similarity of two light curves it is therefore necessary to compare every
+    possible circular shift of the data [29], which as we show below corresponds
+    exactly to the rotation invariance matching problem for shapes in the
+    one-dimensional representation." The archive page confirms the folding:
+    "This is a dataset with 1,000 (purportedly) phase-aligned starlight curves
+    of length 1,024". The archive's other source link, Rebbapragada, Protopapas,
+    Brodley & Alcock, "Finding Anomalous Periodic Time Series" (arXiv:0905.3428),
+    I reached only at abstract level; it likewise stresses that "the periods of
+    any given pair of light-curves may be out of sync".
+  provenance_confidence: medium
+  # The translation step (period estimation + phase folding) is documented in a
+  # paper I read, but neither source I could read names the three classes or the
+  # source survey(s); those come from secondary accounts. The cached UCR summary
+  # lists the donors as "P. Protopapas, E. Keogh & L. Wei".
+
+translation:
+  transformation: [resampling, z-normalization]
+  # Period estimation followed by phase folding and resampling onto a fixed
+  # 1024-point grid. There is no `phase-folding` value in the vocabulary;
+  # `resampling` is the closest available and is what the operation does.
+  what_the_x_axis_is: phase
+  # The 1024 points span ONE estimated period, i.e. phase from 0 to 1, not
+  # elapsed time: equal steps are equal fractions of a period, and the period
+  # differs from star to star. The period itself - often the most
+  # discriminative feature astronomers use - is discarded by the folding.
+  sampling: >
+    Irregularly sampled survey photometry, folded on the estimated period and
+    resampled to 1024 points covering one full cycle. Two instances with the
+    same index therefore correspond to the same phase of their own cycle, not to
+    the same instant or the same elapsed duration.
+  information_lost_or_added: >
+    Phase folding discards absolute time, the number of cycles observed, the
+    period itself (a highly discriminative physical quantity — Cepheids and RR
+    Lyrae differ by roughly an order of magnitude in period), any long-term
+    amplitude evolution, and the survey's irregular cadence and error bars. It
+    adds an arbitrary phase origin: as the VLDB paper says, there is "no natural
+    starting point", so each series is defined only up to a circular shift.
+  label_semantics_changed: "no"
+
+benchmark_task:
+  description: >
+    Classify a length-1024 phase-folded stellar light curve into one of three
+    expert-assigned variable-star classes.
+  is_same_as_original: narrowed
+  # Same astronomical labels, but restricted to three classes and to the folded
+  # representation with the period removed.
+
+verdict: ordered-not-temporal
+verdict_rationale: >
+  The underlying photometry is temporal, but the released series are folded onto
+  one estimated period, so the ordered axis is phase (a fraction of each star's
+  own cycle) rather than elapsed time, and the period itself has been discarded.
+known_issues:
+  - >
+    THE X-AXIS IS PHASE, NOT TIME. Equal steps mean equal fractions of a period
+    that differs per star. Treating this as an elapsed-time series — for example
+    when reasoning about "sampling rate" or about causality along the axis — is
+    a mis-description. A verifier who disagrees should note that the verdict
+    hinges only on this point; layers 1-2 stand either way.
+  - >
+    The archive calls the curves "(purportedly) phase-aligned" — the curators
+    themselves hedge on whether the alignment succeeded. Since there is "no
+    natural starting point" (Keogh et al., VLDB 2006), residual circular shifts
+    are a nuisance factor the benchmark ignores while rotation-invariant methods
+    exploit it.
+  - >
+    Period estimation is a preprocessing step performed upstream and not
+    released; errors in it (aliasing, half/double-period errors) propagate into
+    the series as systematic distortions and are invisible in the benchmark.
+  - >
+    The three class names and the source survey(s) are not stated on the archive
+    page or in either linked source; they are supplied only by secondary
+    accounts.
+  - >
+    Largest dataset in the UCR archive (1000 train / 8236 test, Dau et al. 2019,
+    Sec. IV-D) and heavily imbalanced across the three classes.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.982
+    acc_permuted: 0.9587
+    drop: 0.0233
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 8.8
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.982
+    acc_raw_values: 0.9534
+    acc_summary_stats: 0.9305
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.0287
+    gap_summary: 0.0515
+    seed: 0
+    runtime_s: 6.2
+    run: '2026-09-04'
+
+references:
+- https://www.timeseriesclassification.com/description.php?Dataset=StarLightCurves
+- >
+  Keogh, Wei, Xi, Lee & Vlachos, "LB_Keogh Supports Exact Indexing of Shapes
+  under Rotation Invariance with Arbitrary Representations and Distance
+  Measures", VLDB 2006 (expanded version, cs.ucr.edu/~eamonn/VLDB2006_Expanded.pdf)
+- >
+  Rebbapragada, Protopapas, Brodley & Alcock, "Finding Anomalous Periodic Time
+  Series: An Application to Catalogs of Periodic Variable Stars",
+  arXiv:0905.3428 — abstract page only, full text not read
+- Dau et al., "The UCR Time Series Archive", arXiv:1810.07758

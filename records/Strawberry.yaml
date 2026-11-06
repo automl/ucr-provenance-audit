@@ -1,0 +1,109 @@
+name: Strawberry
+archive:
+- UCR
+archive_type_tag: SPECTRO
+n_train: 613
+n_test: 370
+series_length: 235
+n_channels: 1
+n_classes: 2
+archive_page:
+  description: "Food spectrographs are used in chemometrics to classify food types,\na task\
+    \ that has obvious applications in food safety and quality\nassurance. The classes are\
+    \ strawberry (authentic samples) and\nnon-strawberry (adulterated strawberries and other\
+    \ fruits).\nObtained using Fourier transform infrared (FTIR) spectroscopy with\nattenuated\
+    \ total reflectance (ATR) sampling. As described in\n Use of Fourier transform infrared\
+    \ spectroscopy and partial\nleast squares regression for the detection of adulteration\
+    \ of\nstrawberry purees"
+  donated_by: K. Kemsley, A. Bagnall
+  data_source_link: http://asu.ifr.ac.uk/example-datasets-for-download/
+  second_link: http://onlinelibrary.wiley.com/doi/10.1002/(SICI)1097-0010(199802)76:2%3C263::AID-JSFA943%3E3.0.CO;2-F/abstract
+original_problem:
+  description: >
+    An industrial food-fraud screening problem at the Institute of Food
+    Research, Norwich: strawberry puree is expensive and is diluted with
+    cheaper fruit or sugar, so a rapid instrumental test for "is this really
+    strawberry?" was wanted. Abstract (J. Sci. Food Agric. 76:263-269, 1998,
+    read via Europe PMC): "The mid-IR spectra of 983 fruit purees were used as
+    the data for a partial least squares regression on to a binary dummy
+    variable, that represents two sample types, strawberry or non-strawberry.
+    Three hundred and seventy of the spectra were used as an independent test
+    set, of which 94.3% were correctly assigned by the model." The full abstract
+    (UEA research portal, read 2026-11-02) continues: "The potential long-term
+    stability of the model, developed with 1993 and 1994 fruit, was illustrated
+    by analysing the spectra of fruit harvested in 1995, of which 96.6% were
+    correctly assigned. A 'blind test' of the model was carried out with a set of
+    23 fruit puree samples prepared by an industrial collaborator." How the 370
+    independent test spectra were chosen is not stated in the abstract.
+  prediction_target: authentic strawberry puree vs non-strawberry (adulterated purees and other fruits)
+  input_as_originally_posed: mid-infrared FTIR-ATR spectrum of a fruit puree
+  task_family: spectroscopy
+  stakeholder_and_use: fruit-processing industry QA and food-fraud enforcement labs
+  source: >
+    Holland, Kemsley, Wilson, "Use of Fourier transform infrared spectroscopy
+    and partial least squares regression for the detection of adulteration of
+    strawberry purees", J. Sci. Food Agric. 76, 263-269, 1998,
+    doi:10.1002/(SICI)1097-0010(199802)76:2<263::AID-JSFA943>3.0.CO;2-F.
+    Abstract read via the Europe PMC REST API; full text not reached. The
+    donor's own page, IFR Analytical Sciences "Example Datasets for Download",
+    describes the release: "983 Mid-infrared (MIR) spectra of fresh fruit
+    purees: strawberry (authentic samples) and non-strawberry (adulterated
+    strawberries and other fruits). Raw data matrix size [983 x 235]."
+  provenance_confidence: high
+
+translation:
+  transformation: [spectrum-as-series]
+  what_the_x_axis_is: wavelength
+  sampling: 235 absorbance values on the FTIR-ATR mid-IR wavenumber grid
+  information_lost_or_added: >
+    None: the shipped 613 + 370 = 983 series and length 235 reproduce the
+    donor's raw matrix [983 x 235] exactly, and the 370-case test set is the
+    paper's own independent test set. The ordering is a wavenumber axis;
+    the source model is PLS regression on the whole spectrum, which is
+    order-invariant.
+  label_semantics_changed: "no"
+
+benchmark_task:
+  description: Classify a univariate length-235 mid-IR spectrum as strawberry or non-strawberry puree.
+  is_same_as_original: "yes"
+  # Same binary authenticity question, same spectra, and - unusually for the
+  # archive - the same train/test split as the source paper.
+
+verdict: ordered-not-temporal
+verdict_rationale: >
+  The task is the food chemists' own adulteration-screening problem, but the
+  ordered axis is FTIR wavenumber rather than time.
+known_issues:
+  - 'One test series is numerically identical to a training series (found by exact elementwise comparison of the shipped .ts files); a further 88 of the 370 test cases have a training series correlated above 0.9999 with them, though FTIR spectra of similar purees are intrinsically near-collinear, so most of that is not evidence of duplication.'
+  - 'The negative class is heterogeneous by construction - adulterated strawberry purees mixed with unspecified adulterants *and* other fruit species - so "non-strawberry" is not one coherent population.'
+  - 'Class imbalance roughly 2:1 in favour of the strawberry class (test: 132 / 238).'
+  - 'The purees span the 1993, 1994 and 1995 harvests; the source paper treats harvest year as a robustness test, but the archive gives no year metadata, so any year-driven batch structure is invisible in the released split.'
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.9838
+    acc_permuted: 0.9784
+    drop: 0.0054
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 5.9
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.9838
+    acc_raw_values: 0.9676
+    acc_summary_stats: 0.9162
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.0162
+    gap_summary: 0.0676
+    seed: 0
+    runtime_s: 3.6
+    run: '2026-09-04'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=Strawberry
+  - 'Holland, Kemsley, Wilson, J. Sci. Food Agric. 76:263-269, 1998 (abstract, via Europe PMC REST API; full abstract on the UEA research portal, https://research-portal.uea.ac.uk/en/publications/use-of-fourier-transform-infrared-spectroscopy-and-partial-least-/)'
+  - 'IFR Analytical Sciences, "Example Datasets for Download" (http://asu.ifr.ac.uk/example-datasets-for-download/, via the Internet Archive)'

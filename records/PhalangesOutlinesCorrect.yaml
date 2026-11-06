@@ -1,0 +1,125 @@
+name: PhalangesOutlinesCorrect
+archive:
+- UCR
+archive_type_tag: IMAGE
+n_train: 1800
+n_test: 858
+series_length: 80
+n_channels: 1
+n_classes: 2
+archive_page:
+  description: 'This series of 11 classification problems were created as part of Luke Davis''s
+    PhD titled "Predictive Modelling of Bone Ageing". They are all derived from the same images,
+    extracted from Cao et al. "Digital hand atlas and web-based bone age assessment: system
+    design and implementation". They are designed to test the efficacy of hand and bone outline
+    detection and whether these outlines could be helpful in bone age prediction. Algorithms
+    to automatically extract the hand outlines and then the outlines of three bones of the
+    middle finger (proximal, middle and distal phalanges) were applied to over 1300 images,
+    and three human evaluators labelled the output of the image outlining as correct or incorrect.
+    This generated three classification problems: DistalPhalanxOutlineCorrect; MiddlePhalanxOutlineCorrect;
+    and ProximalPhalanxOutlineCorrect. The next stage of the project was to use the outlines
+    to predict information about the subjects age. The three problems {em DistalPhalanxOutlineAgeGroup,
+    MiddlePhalanxOutlineAgeGroup and ProximalPhalanxOutlineAgeGroup} involve using the outline
+    of one of the phalanges to predict whether the subject is one of three age groups: 0-6
+    years old, 7-12 years old and 13-19 years old. Note that these problems are aligned by
+    subject, and hence can be treated as a multi dimensional TSC problem. Problem Phalanges
+    contains the concatenation of all three problems. Bone age estimation is usually performed
+    by an expert with an algorithm called Tanner-Whitehouse. This involves scoring each bone
+    into one of seven categories based on the stage of development. The final three bone image
+    classification problems, DistalPhalanxTW, MiddlePhalanxTW and ProximalPhalanxTW}, involve
+    predicting the Tanner-Whitehouse score (as labelled by a human expert) from the outline.'
+  donated_by: L. Davis, A. Bagnall
+  data_source_link: https://www.uea.ac.uk/computing/machine-learning/predictive-modelling-of-bone-ageing
+  second_link: http://arxiv.org/abs/1406.4781
+original_problem:
+  description: >
+    Part of the same project as the nine phalanx problems: Luke Davis's PhD
+    "Predictive Modelling of Bone Ageing" at UEA, on hand radiographs from the
+    Digital Hand Atlas. Bagnall & Davis (arXiv:1406.4781, Sec. 3) describe the
+    pipeline as "segment and verify hand outline; segment and verify bones; use
+    the bone outlines to construct models of age"; this dataset is the
+    verification step for the bone stage. The archive page states that outlining
+    algorithms "were applied to over 1300 images, and three human evaluators
+    labelled the output of the image outlining as correct or incorrect", giving
+    the DistalPhalanxOutlineCorrect / MiddlePhalanxOutlineCorrect /
+    ProximalPhalanxOutlineCorrect problems, and that "Problem Phalanges contains
+    the concatenation of all three problems".
+  prediction_target: whether the automatic outline extraction for a phalanx was judged correct
+  input_as_originally_posed: >
+    plain radiograph of a child's non-dominant hand, from which the outline of
+    one of the three phalanges of the middle finger was automatically segmented
+  task_family: image-classification
+  stakeholder_and_use: >
+    the developers of an automated bone-ageing system, who need to reject bad
+    segmentations before the age model sees them (paediatric radiology context)
+  source: >
+    Bagnall & Davis, "Predictive Modelling of Bone Age through Classification and
+    Regression of Bone Shapes", arXiv:1406.4781 (read) for the pipeline and the
+    outline representation; the pooling of the three correctness problems into
+    one dataset is documented only on the archive page.
+  provenance_confidence: high
+
+translation:
+  transformation: [contour-unrolling, resampling, concatenation, z-normalization]
+  what_the_x_axis_is: arc-length
+  sampling: >
+    As for the individual phalanx problems - Bagnall & Davis, Sec. 3.1: the
+    series is "obtained by calculating the Euclidean distance of each pixel along
+    the outline of the bone", started at the midpoint of the phalanx, traversed
+    clockwise, with the epiphysis series concatenated and everything resampled to
+    "80 attributes, 50 phalanx, and 30 epiphysis"; a missing epiphysis is encoded
+    as 30 trailing zeros. This dataset pools the distal, middle and proximal
+    instances into one 1800/858 problem (the sum of the three sibling splits).
+  information_lost_or_added: >
+    Everything the individual problems lose (density, texture, absolute size),
+    plus the identity of the bone: three anatomically different objects are
+    pooled into one class-conditional distribution, so which phalanx a series
+    came from becomes unobserved nuisance variation.
+  label_semantics_changed: "yes: the label describes the quality of the segmentation output, not a property of the patient"
+
+benchmark_task:
+  description: >
+    Classify a length-80 phalanx-outline series (distal, middle or proximal,
+    pooled) as a correct or incorrect segmentation.
+  is_same_as_original: "yes"
+  # Same correctness question as the three sibling problems, on their union.
+
+verdict: translated-modality
+verdict_rationale: >
+  The source modality is a radiograph and the series is a segmented bone outline
+  parameterized by arc-length, so the ordering is spatial, not temporal.
+known_issues:
+  - 'Not an independent dataset: 1800/858 is exactly the union of DistalPhalanxOutlineCorrect (600/276), MiddlePhalanxOutlineCorrect (600/291) and ProximalPhalanxOutlineCorrect (600/291). Reporting all four in one benchmark average counts the same instances twice.'
+  - The three bones come from the same subjects, so instances within this dataset are not independent and the same patient can appear in both train and test.
+  - 'Encoding artifact: a missing epiphysis is encoded as 30 trailing zeros, a flat block that is directly readable and correlated with maturity.'
+  - Label is a judgement about a specific segmentation algorithm's output; the dataset measures that pipeline rather than a domain phenomenon.
+  - Three human evaluators labelled correctness; no adjudication rule or agreement statistic is exposed.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.8403
+    acc_permuted: 0.824
+    drop: 0.0163
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 7.4
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.8403
+    acc_raw_values: 0.8147
+    acc_summary_stats: 0.7436
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.0256
+    gap_summary: 0.0967
+    seed: 0
+    runtime_s: 3.4
+    run: '2026-09-04'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=PhalangesOutlinesCorrect
+  - Bagnall & Davis, "Predictive Modelling of Bone Age through Classification and Regression of Bone Shapes", arXiv:1406.4781, 2014
+  - Dau et al., "The UCR Time Series Archive", arXiv:1810.07758

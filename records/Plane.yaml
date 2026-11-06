@@ -1,0 +1,135 @@
+name: Plane
+archive:
+- UCR
+archive_type_tag: SENSOR
+n_train: 105
+n_test: 105
+series_length: 144
+n_channels: 1
+n_classes: 7
+archive_page:
+  description: "The fighter aeroplane shape database included Mirage,\r\nEurofighter, F-14,\
+    \ Harrier, F-22 and F-15. Since F-14 has\r\ntwo possible shapes, one when its wings are\
+    \ closed and another when its wings are opened, total number of shape\r\nclasses are seven.\
+    \ Each class includes 30 shape samples.\r\nShape database was created by taking digital\
+    \ pictures of diecast replica models of these aeroplanes from top. Pictures\r\nwere captured\
+    \ at 640 by 480 resolution, and were segmented\r\nusing Spedge and Medge [6] color image\
+    \ segmentation algorithm. Contours of the segmented planes were used for\r\ntraining and\
+    \ testing of the classifier. \r\n\r\nFurther details are available in the paper\r\n\r\n\
+    Thakoor, Ninad, and Jean Gao. \"Shape classifier based on generalized probabilistic descent\
+    \ method with hidden Markov descriptor.\" Tenth IEEE International Conference on Computer\
+    \ Vision (ICCV'05) Volume 1. Vol. 1. IEEE, 2005.  (Link Here)"
+  donated_by: ''
+  data_source_link: ''
+  second_link: ''
+original_problem:
+  description: >
+    The companion database to Car, from the same computer-vision paper. Thakoor
+    & Gao photographed die-cast replica fighter aircraft from directly above and
+    segmented the silhouettes, in order to test a shape classifier on classes
+    that are deliberately very similar to one another. The stated motivation is
+    military surveillance: identifying an aircraft type from its planform.
+  prediction_target: >
+    fighter aircraft type (Mirage, Eurofighter, F-14 wings-closed, F-14
+    wings-open, Harrier, F-22, F-15)
+  input_as_originally_posed: >
+    top-down 640x480 digital photograph of a die-cast model aircraft, segmented
+    to a 2-D silhouette contour
+  task_family: image-classification
+  stakeholder_and_use: >
+    military/aerial surveillance systems classifying aircraft views; in practice
+    a purpose-built vision benchmark
+  source: >
+    Thakoor & Gao, "Shape Classifier based on Generalized Probabilistic Descent
+    Method with Hidden Markov Descriptor", ICCV 2005, Sec. 7.1 (read in full):
+    "The fighter aeroplane shape database included Mirage, Eurofighter, F-14,
+    Harrier, F-22 and F-15. Since F-14 has two possible shapes, one when its
+    wings are closed and another when its wings are opened, total number of
+    shape classes are seven. Each class includes 30 shape samples. Shape
+    database was created by taking digital pictures of die-cast replica models
+    of these aeroplanes from top. Pictures were captured at 640x480 resolution,
+    and were segmented using Spedge and Medge color image segmentation
+    algorithm. Contours of the segmented planes were used for training and
+    testing of the classifier."
+  provenance_confidence: high
+
+translation:
+  transformation: [contour-unrolling, resampling, z-normalization]
+  what_the_x_axis_is: arc-length
+  sampling: >
+    Points walked around the closed aircraft outline; the archive series has 144
+    points per shape. Thakoor & Gao smoothed contours with a Gaussian filter
+    (sigma = 10) and normalized aeroplane shape length to 512 points, so the
+    archive's 144-point series is a further, undocumented resampling.
+  information_lost_or_added: >
+    A 2-D planform is flattened to a 1-D function of perimeter position; scale
+    and starting point become conventions rather than measurements. Nothing
+    temporal exists anywhere in this data — the "series" index is distance
+    travelled along an aircraft outline.
+  label_semantics_changed: "no"
+
+benchmark_task:
+  description: >
+    Classify a univariate length-144 series (an unrolled aircraft outline) into
+    one of seven aircraft-type classes.
+  is_same_as_original: different-task
+  # Labels unchanged; the input modality is a photograph reduced to a contour.
+
+verdict: translated-modality
+verdict_rationale: >
+  The original input is a photograph of a model aircraft and the series index is
+  arc-length around its silhouette, so despite the SENSOR tag this is an image
+  shape-classification problem in time-series clothing.
+known_issues:
+  - >
+    Archive SENSOR type tag is wrong for the underlying modality: this is
+    outline/shape data (photographs of models), not a recorded signal.
+  - >
+    Dau et al. 2019 (arXiv:1810.07758), Table II, list Plane among twelve
+    "solved" data sets on which at least one algorithm reaches 100% accuracy;
+    the cached UCR summary shows 1-NN DTW error 0.0000. It carries essentially
+    no discriminative information for method comparison.
+  - >
+    The source gives 30 shape samples per class from digital pictures of
+    die-cast replica models; how many physical models were photographed per
+    class is undocumented. If each class is one model, within-class variation is
+    only viewpoint/segmentation noise on one physical object, and the split
+    cannot separate models.
+  - >
+    As with Car, the exact image-to-1D mapping and the resampling from Thakoor &
+    Gao's 512 points to the archive's 144 are undocumented.
+  - >
+    Closed contours have no canonical start point; rotation invariance is not
+    handled by the benchmark formulation.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 1.0
+    acc_permuted: 0.9714
+    drop: 0.0286
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 5.6
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 1.0
+    acc_raw_values: 0.9714
+    acc_summary_stats: 0.9429
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.0286
+    gap_summary: 0.0571
+    seed: 0
+    runtime_s: 3.5
+    run: '2026-09-04'
+
+references:
+- https://www.timeseriesclassification.com/description.php?Dataset=Plane
+- >
+  Thakoor & Gao, "Shape Classifier based on Generalized Probabilistic Descent
+  Method with Hidden Markov Descriptor", ICCV 2005, Vol. 1 (CiteSeerX full text)
+- https://biomecis.uta.edu/shape_data.htm (Thakoor/Gao shape database page)
+- Dau et al., "The UCR Time Series Archive", arXiv:1810.07758

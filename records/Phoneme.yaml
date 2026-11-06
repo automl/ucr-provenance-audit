@@ -1,0 +1,148 @@
+name: Phoneme
+archive:
+- UCR
+archive_type_tag: AUDIO
+n_train: 214
+n_test: 1896
+series_length: 1024
+n_channels: 1
+n_classes: 39
+archive_page:
+  description: "This data set is a subsample of the data used in the paper  \nDual-domain\
+    \ Hierarchical Classification of Phonetic Time\nSeries . Each series is extracted from\
+    \ the segmented audio\ncollected from Google Translate, oxforddictionaries.com and the\n\
+    Merrriam-Webster online dictionary. Each of these sources have\ndifferent features. Audio\
+    \ files collected from Google translate,\nOxford, and Merrriam-Webster dictionaries are\
+    \ recorded at 22050,\n44100 and 11025 samples per second respectively. All of them have\n\
+    male and female speakers in different ratios. The Oxford dictionary\nincludes British\
+    \ and American accent pronunciation for each word.\n After data collection, they segment\
+    \ waveforms of the words to\ngenerate phonemes using the Forced Aligner tool from the\
+    \ Penn\nPhonetics Laboratory."
+  donated_by: H. Hamooni, A. Mueen
+  data_source_link: http://www.cs.unm.edu/~hamooni/papers/Dual_2014/index.html
+  second_link: ''
+original_problem:
+  description: >
+    Large-scale phoneme classification for speech recognition. Hamooni and
+    Mueen argued that phoneme classifiers were being tuned on the small,
+    hand-segmented TIMIT corpus and did not transfer, so they built a much
+    larger, automatically segmented corpus - 78,000 English words with audio
+    from Google Translate, oxforddictionaries.com and Merriam-Webster, cut
+    into 370,000 phoneme segments in 39 classes with the Penn Phonetics
+    Laboratory Forced Aligner - and classified the phoneme waveforms with a
+    dual-domain (time and frequency) hierarchical method. The UCR dataset is
+    a small subsample of those phoneme segments.
+  prediction_target: which of 39 English phonemes the audio segment is
+  input_as_originally_posed: audio waveform of a phoneme segment cut out of a spoken dictionary word
+  task_family: audio-classification
+  stakeholder_and_use: speech-recognition / pronunciation systems; the authors' motivation is a phoneme classifier that generalizes across recording sources rather than overfitting one corpus
+  source: >
+    Hamooni and Mueen, "Dual-domain Hierarchical Classification of Phonetic
+    Time Series", IEEE ICDM 2014, Sec. III Data Collection and Cleaning
+    (read) - "We have collected English words from three sources with their
+    audio files. These consist of 30,000 words from Google Translate, 3,000
+    words from oxforddictionaries.com and 45000 words from the
+    Merrriam-Webster online dictionary. ... recorded at 22050, 44100 and
+    11025 samples per second respectively." "After data collection, we
+    segment waveforms of the words to generate phonemes. We use the Forced
+    Aligner tool from the Penn Phonetics Laboratory, which segments a word
+    based on its phonetic spelling in the dictionary." "The segmentation
+    process generated 370,000 phonemes in 39 classes covering the entire
+    dictionary." Sec. III-C - "we do a resampling of the words to have all
+    phoneme waveforms at 22050 sample per seconds."
+  provenance_confidence: high
+
+translation:
+  transformation: [windowing, resampling, z-normalization]
+  what_the_x_axis_is: time
+  sampling: >
+    Audio resampled to 22050 Hz at the word level, then cut into
+    variable-length phoneme segments by the Forced Aligner. The archive
+    ships each segment interpolated to a fixed 1024 points, z-normalized.
+    The 2015 UCR per-dataset readme ("Phoneme Dataset.txt", removed from
+    the live site between Oct 2015 and Nov 2016; Wayback capture
+    20151010115209) documents the operation: "The data in the original
+    dataset are of un-equal length. In this website, we just use a small
+    subset of the original dataset, and we interpolate the data to make
+    all time series equal length by doing dimension-reduction." Because
+    each segment is rescaled to 1024 points, one sample no longer equals
+    1/22050 s and the segment's real duration is not recoverable. Checked
+    in the shipped data - every series has mean 0 and unit standard
+    deviation and none ends in constant padding, consistent with
+    interpolation rather than zero-padding or truncation. How the
+    2110-series subset (~0.57% of the 370,000-segment corpus) was selected
+    is undocumented ("we just use a small subset" is all any consulted
+    source says); the Zipf-like class distribution (log-log slope ~ -1.1,
+    no caps) is consistent with a frequency-proportional random draw. The
+    train/test split is deterministically stratified: every class's train
+    count is exactly round(0.10 x class total) with a floor of 1 (derived
+    from the shipped data; no source documents the split), so test mirrors
+    train's imbalanced distribution.
+  information_lost_or_added: >
+    The archive series are raw (time-domain) audio, NOT a spectrogram - the
+    shipped series oscillate about zero with roughly 150 zero crossings per
+    1024 points and spread their energy over the whole series, which is
+    waveform behaviour. Fixing the length discards the phoneme's duration,
+    a genuinely discriminative cue, and z-normalization discards loudness.
+    (The paper's own method also used MFCC features, but those are not what
+    the UCR archive ships.) This UCR dataset is univariate raw audio; UEA's
+    Phoneme, often called PhonemeSpectra, is a DIFFERENT dataset built from
+    the same source corpus - the UEA archive paper, Sec. 6.4 Phoneme,
+    states "This dataset is a multivariate representation of a subset of
+    the data used in the paper [21]. ... A Spectrogram of each instance was
+    then created with a window size of 0.001 seconds and an overlap of 90%.
+    Each instance in this multivariate dataset is arranged such that each
+    dimension is a frequency band from the spectrogram."
+  label_semantics_changed: "no"
+
+benchmark_task:
+  description: Classify a univariate length-1024 audio segment into 39 phoneme classes.
+  is_same_as_original: narrowed
+  # Same labels and same modality, but a 2110-series subsample of a 370,000
+  # phoneme corpus, with fixed length and z-normalization imposed.
+
+verdict: native-tsc
+verdict_rationale: >
+  The original input is an audio signal in time, the archive ships the raw
+  waveform (verified in the shipped data), and the label is the original
+  phoneme identity - none of rules 1-3 fire.
+known_issues:
+  - "Severe class imbalance and near-zero-shot classes: 39 classes over 214 train / 1896 test series, with 8 classes having a single training example, total class counts ranging from 2 to 238, and one class (id 39) having a single test series (checked in the shipped data). Accuracies on this dataset are correspondingly low, and balanced accuracy is very noisy: each per-class recall weighs 1/39, so the singleton-test class swings the score by ~2.6 points on one prediction, and the ~8 tail classes with <=13 test and 1-2 train series control up to ~20 points of its range."
+  - "Class labels are opaque integers 1-39: no shipped file or consulted source maps them to phonemes, so per-class analysis in phonetic terms requires re-matching against the source corpus. (The label semantics as a set are documented - 39 American English phonemes, 22 consonants + 17 vowels - so this does not trigger the rule-5 unclear verdict.)"
+  - Labels come from automatic forced alignment, not human segmentation, so boundary errors are baked in; the authors show a failure case in Sec. III-D where "The phoneme /t/ is completely missed as silence and the vowel /O:/ is segmented into /t/ and /O/", and note that "the phoneme boundaries may include some portions of the adjacent phonemes".
+  - Source bias - three dictionaries with different original sampling rates (22050/44100/11025 Hz), different speakers and British vs American pronunciations; the authors identify this bias explicitly as a research problem.
+  - Multiple phonemes are cut from the same word and speaker, so segments in train and test can come from the same recording - train/test independence is questionable.
+  - Not to be confused with UEA Phoneme / PhonemeSpectra, which is the spectrogram-derived multivariate dataset from the same corpus (see translation.information_lost_or_added).
+  - "The fixed length was achieved by uniform interpolation (per the 2015 UCR readme) - the very operation the source paper measured as detrimental for this data: Sec. V, 'To adopt the existing techniques for fast similarity search, we cannot resample the signals to a fixed length. Resampling can have detrimental impact on time domain techniques such as computing DTW distance on phonemes', with Fig. 5 showing pairs that are near neighbors under variable-length DTW 'moved far when resampled to equal lengths'. The benchmark therefore ships the data in a representation its own authors rejected; interpolation also erases phoneme duration as a class cue."
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.2943
+    acc_permuted: 0.1229
+    drop: 0.1714
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 6.4
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.2943
+    acc_raw_values: 0.1055
+    acc_summary_stats: 0.1382
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.1888
+    gap_summary: 0.1561
+    seed: 0
+    runtime_s: 13.8
+    run: '2026-09-04'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=Phoneme
+  - Hamooni and Mueen, Dual-domain Hierarchical Classification of Phonetic Time Series, ICDM 2014 (read) - https://www.cs.unm.edu/~hamooni/papers/Dual_2014/Phoneme.pdf
+  - http://www.cs.unm.edu/~hamooni/papers/Dual_2014/index.html
+  - Bagnall et al., The UEA multivariate time series classification archive 2018, arXiv:1811.00075 (read, Sec. 6.4 Phoneme)
+  - Own inspection of the shipped Phoneme_TRAIN.txt / _TEST.txt (waveform vs spectrogram check, normalization, class counts)
+  - UCR 2015 per-dataset readme "Phoneme Dataset.txt" (read; removed from the live UCR site, Wayback-only) - http://web.archive.org/web/20151010115209/http://www.cs.ucr.edu/~eamonn/time_series_data/Phoneme%20Dataset.txt - documents interpolation to equal length and the undocumented "small subset" subsample

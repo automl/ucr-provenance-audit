@@ -1,0 +1,135 @@
+name: Car
+archive:
+- UCR
+archive_type_tag: SENSOR
+n_train: 60
+n_test: 60
+series_length: 577
+n_channels: 1
+n_classes: 4
+archive_page:
+  description: "The data is outlines of four different types of cars extracted from traffic\
+    \ videos using the motion information. The images were mapped onto a 1-D series.\nThe\
+    \ vehicles were classified into one of the four class: sedan, pickup, minivan or SUV.\
+    \ Further details are available in the [1]\n\n\n  Thakoor, Ninad, and Jean Gao. \"Shape\
+    \ classifier based on generalized probabilistic descent method with hidden Markov descriptor.\"\
+    \ Tenth IEEE International Conference on Computer Vision (ICCV'05) Volume 1. Vol. 1. IEEE,\
+    \ 2005.  (Link Here)"
+  donated_by: J. Gao
+  data_source_link: ''
+  second_link: ''
+original_problem:
+  description: >
+    A computer-vision shape-classification study. Thakoor & Gao needed pairs of
+    *similar* shape classes to test a discriminative HMM shape classifier, and
+    built two purpose-made databases; the second was vehicle silhouettes
+    segmented out of outdoor traffic video by a motion-based object extractor.
+    The application framing is civilian traffic surveillance: telling vehicle
+    body types apart from an overhead/side silhouette. The label is the vehicle
+    body type, not anything about how the vehicle moved.
+  prediction_target: vehicle body type (sedan, pickup, minivan, SUV)
+  input_as_originally_posed: >
+    2-D vehicle silhouette (closed contour) segmented from 320x240 outdoor
+    traffic video using motion information
+  task_family: image-classification
+  stakeholder_and_use: >
+    traffic-surveillance / intelligent-transportation vision systems that
+    classify vehicle type from a roadside or overhead camera
+  source: >
+    Thakoor & Gao, "Shape Classifier based on Generalized Probabilistic Descent
+    Method with Hidden Markov Descriptor", ICCV 2005, Sec. 7.2 (read in full,
+    CiteSeerX copy): "In the second experiment, we classified the vehicles
+    shapes extracted from traffic videos using the motion information... The
+    vehicles were classified into one of the four class: sedan, pickup, minivan
+    or SUV." Same section: "Videos were captured at resolution of 320 x 240. As
+    object extraction approach used does not deal with shadows, the extracted
+    car shapes are distorted in the bottom half due to shadow. 30 samples for
+    each class were extracted from the video." The companion database page
+    (biomecis.uta.edu/shape_data.htm) states the shapes are stored as "Cartesian
+    coordinates of each point on the perimeter of the shape".
+  provenance_confidence: high
+
+translation:
+  transformation: [contour-unrolling, resampling, z-normalization]
+  what_the_x_axis_is: arc-length
+  sampling: >
+    Points walked around the closed vehicle outline; the archive series has 577
+    points per shape. Thakoor & Gao themselves smoothed the contours with a
+    Gaussian filter (sigma = 5) and normalized vehicle shape length to 128
+    points, so the 577-point archive series is a different (undocumented)
+    re-parameterization of the same perimeter coordinates.
+  information_lost_or_added: >
+    The 2-D silhouette is flattened to a 1-D function of perimeter position, so
+    the closed-curve topology and the choice of starting point become arbitrary;
+    a cyclic shift of the outline gives a different "series". Interior/texture
+    information was already gone at the silhouette stage, and the segmentation
+    shadow artefact Thakoor & Gao describe ("distorted in the bottom half due to
+    shadow") is baked into the values.
+  label_semantics_changed: "no"
+
+benchmark_task:
+  description: >
+    Classify a univariate length-577 series (an unrolled vehicle outline) into
+    one of four body types.
+  is_same_as_original: different-task
+  # Same four labels, but the input is a 1-D re-parameterization of an image
+  # contour rather than any signal recorded over time.
+
+verdict: translated-modality
+verdict_rationale: >
+  The original input is a silhouette extracted from video frames and the series
+  index is position along the outline (arc-length), not time; the archive's
+  SENSOR type tag reflects the camera, not the data.
+known_issues:
+  - >
+    The archive's SENSOR type tag is misleading: this is outline/shape data
+    (the archive's own description says "The images were mapped onto a 1-D
+    series").
+  - >
+    The exact 1-D mapping UCR used (centroid distance? curvature? angular
+    function?) is not documented anywhere I could find, and the archive length
+    577 does not match Thakoor & Gao's own 128-point normalization, so the
+    preprocessing chain between the published database and the archive series
+    is unverified.
+  - >
+    Only 30 shapes per class in the source database, all cut from the same
+    outdoor traffic videos, so nearby instances may be different frames of
+    scenes with shared lighting/shadow artefacts; Thakoor & Gao explicitly note
+    shadow-induced distortion in the lower half of every vehicle contour.
+  - Small dataset (60/60) with a 68% default rate on the test split.
+  - >
+    Contours are closed curves with no canonical starting point; unless the
+    curators fixed a convention, rotation of the start point is a nuisance
+    factor the benchmark ignores.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.9167
+    acc_permuted: 0.7833
+    drop: 0.1333
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 5.7
+    run: '2026-09-03'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.9167
+    acc_raw_values: 0.7
+    acc_summary_stats: 0.4667
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.2167
+    gap_summary: 0.45
+    seed: 0
+    runtime_s: 3.4
+    run: '2026-09-03'
+
+references:
+- https://www.timeseriesclassification.com/description.php?Dataset=Car
+- >
+  Thakoor & Gao, "Shape Classifier based on Generalized Probabilistic Descent
+  Method with Hidden Markov Descriptor", ICCV 2005, Vol. 1 (CiteSeerX full text)
+- https://biomecis.uta.edu/shape_data.htm (Thakoor/Gao shape database page)
+- Dau et al., "The UCR Time Series Archive", arXiv:1810.07758

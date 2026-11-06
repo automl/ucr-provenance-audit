@@ -1,0 +1,69 @@
+name: CBF
+archive:
+- UCR
+archive_type_tag: Simulated
+n_train: 30
+n_test: 900
+series_length: 128
+n_channels: 1
+n_classes: 3
+
+original_problem:
+  description: >
+    No real-world problem exists. Cylinder-Bell-Funnel is a synthetic benchmark
+    defined by Naoki Saito in his PhD thesis to demonstrate local feature
+    extraction: each series is standard normal noise plus a class-specific
+    offset shape (plateau, ramp-up, ramp-down) at a random location and width.
+  prediction_target: which of three generating shapes produced the series
+  input_as_originally_posed: synthetically generated signal
+  task_family: synthetic-demo
+  stakeholder_and_use: none (synthetic demo)
+  source: >
+    Saito, N., "Local Feature Extraction and Its Applications Using a Library
+    of Bases", PhD thesis, Yale University, 1994
+  provenance_confidence: high
+
+translation:
+  transformation: [simulation]
+  what_the_x_axis_is: index
+  sampling: 128 generated points per series
+  information_lost_or_added: n/a (generated directly in series form)
+  label_semantics_changed: "no"
+
+benchmark_task:
+  description: Classify a univariate length-128 series as cylinder, bell, or funnel.
+  is_same_as_original: no-original-exists
+
+verdict: synthetic
+verdict_rationale: >
+  Generated data with no underlying real-world task; TabArena-style curation
+  would exclude it from a benchmark of real problems.
+known_issues: []
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.9989
+    acc_permuted: 0.8989
+    drop: 0.1
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 5.6
+    run: '2026-09-03'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.9989
+    acc_raw_values: 0.3311
+    acc_summary_stats: 0.3311
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.6678
+    gap_summary: 0.6678
+    seed: 0
+    runtime_s: 2.4
+    run: '2026-09-03'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=CBF
+  - Saito (1994), PhD thesis, "Local Feature Extraction and Its Applications Using a Library of Bases"

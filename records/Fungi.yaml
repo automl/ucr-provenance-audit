@@ -1,0 +1,151 @@
+name: Fungi
+archive:
+- UCR
+archive_type_tag: OTHER
+n_train: 18
+n_test: 186
+series_length: 201
+n_channels: 1
+n_classes: 18
+archive_page:
+  description: 'The dataset contains high-resolution melt curves of the rDNA internal transcribed
+    spacer (ITS) region of 51 strains of 18 fungal species. High Resolution Melt (HRM) analysis
+    is a powerful technique in molecular biology for the detection of mutations, polymorphisms
+    and epigenetic differences in double-stranded DNA samples  The melt profile of the ITS
+    region is unique to each species and conserved across different strains of the same species.  There
+    are 18 classes corresponding to species name.  - Class 1: A.flavus - Class 2: A.fumigatus
+    - Class 3: A.terreus - Class 4: C.albicans - Class 5: C.dubliniensis - Class 6: C.gattii
+    - Class 7: C.glabrata - Class 8: C.lusitaniae - Class 9: C.neoformans - Class 10: C.orthopsilosis
+    - Class 11: C.parapsilosis - Class 12: C.tropicalis - Class 13: C.zeylanoides - Class
+    14: D.hansenii - Class 15: M.guilliermondii - Class 16: P.kudriavzevii - Class 17: R.mucilaginosa
+    - Class 18: T.marneffei    There is nothing to infer from the order of examples in the
+    train and test set.  Data created by Lu, Sha et al. (see [1]). Data donated by William
+    Fonzi. Data edited by Hoang Anh Dau.  [1] Lu, Sha, et al. "Dynamic time warping assessment
+    of high-resolution melt curves provides a robust metric for fungal identification." PloS
+    one 12.3 (2017): e0173320.'
+  donated_by: W. Fonzi
+  data_source_link: ''
+  second_link: ''
+original_problem:
+  description: >
+    A clinical-microbiology diagnostics problem - fungal infections need
+    rapid, sensitive species identification, and high-resolution melt (HRM)
+    analysis of a PCR-amplified DNA region is a cheap molecular assay whose
+    curve shape is species-specific. Lu et al. asked whether distance
+    measures developed for time series (chiefly DTW) can classify HRM curves
+    of the rDNA internal transcribed spacer (ITS) region automatically,
+    replacing the visual comparison of difference curves that laboratories
+    were doing by hand. They melted 51 strains of 18 species and matched 243
+    previously identified clinical isolates against the reference curves.
+  prediction_target: fungal species (18 species; Candida, Cryptococcus, Aspergillus and related genera)
+  input_as_originally_posed: high-resolution melt curve of a PCR-amplified rDNA ITS amplicon - fluorescence measured while the sample is heated
+  task_family: other
+  # `other`: a molecular-diagnostic assay curve. It is not `spectroscopy`
+  # (the ordered axis is temperature, not wavelength/frequency) and not
+  # `clinical-diagnosis` as defined here (no physiological signal is
+  # recorded from a patient; the assay runs on extracted DNA), though the
+  # decision it supports is clinical.
+  stakeholder_and_use: clinical microbiology laboratories identifying the fungal species causing an infection
+  source: >
+    Lu, Mirchevska, Phatak, Li, Luka, Calderone, Fonzi, "Dynamic time
+    warping assessment of high-resolution melt curves provides a robust
+    metric for fungal identification", PLoS ONE 12(3), e0173320, 2017
+    (open access, read). Methods, "PCR amplification" - "Samples were then
+    heated from 60-95 C at a r[ate] ... [with] acquisition of 25 fluorescent
+    readings per 1 C. All samples were tested in duplicate in two
+    independent trials." Methods, "High-resolution melt curve analysis" -
+    "melting rates were directly determined using the first derivative of
+    the normalized melt curves. Melt curve data was normalized within the
+    LightCycler 480 Gene Scanning Software (Roche). The region between 72
+    and 74 C was set at 100%, 93.5 to 94 C was set to 0%. No curve shifting
+    was applied. ... Rate curves were fitted with a cubic smoothing spline
+    ... and the splines were used to calculate rates at 0.1 C increments.
+    The resulting curves were z-normalized using the scale function and the
+    region between 76 and 94 C was used for distance calculations."
+    Introduction - "The sequentially ordered data of a melt curve is
+    comparable to the temporally ordered data of a time series", i.e. the
+    authors themselves frame the time-series treatment as an analogy.
+  provenance_confidence: high
+
+translation:
+  transformation: [resampling, z-normalization]
+  what_the_x_axis_is: temperature
+  # The axis is TEMPERATURE in degrees Celsius, evenly spaced at 0.1 C - a
+  # scanned physical parameter, not elapsed time. (The melt is performed over
+  # real time, but the series is indexed by the temperature reached, and the
+  # heating rate is not recoverable from the shipped data.)
+  sampling: >
+    Fluorescence acquired at 25 readings per degree C while heating from
+    60 to 95 C; the melt-rate curve (first derivative of the normalized
+    melt curve) was smoothed with a cubic spline and re-evaluated on a
+    0.1 C grid, then z-normalized. The archive's 201 points correspond to a
+    20 C-wide stretch of that grid (the paper computed distances over
+    76-94 C); the exact endpoints of the archived window are not stated on
+    the archive page.
+  information_lost_or_added: >
+    The ordered axis is temperature, not time - point i is a melt rate at
+    temperature t0 + 0.1*i degrees C, and neighbouring points are correlated
+    because DNA duplexes melt cooperatively over a temperature range, not
+    because anything evolves in time. Spline smoothing plus differentiation
+    adds strong local correlation and removes high-frequency detail;
+    z-normalization removes the absolute melt-rate scale; the
+    normalization anchors (100% at 72-74 C, 0% at 93.5-94 C) impose an
+    instrument-specific alignment.
+  label_semantics_changed: "no"
+
+benchmark_task:
+  description: Classify a univariate length-201 melt-rate curve into one of 18 fungal species.
+  is_same_as_original: "yes"
+
+verdict: ordered-not-temporal
+verdict_rationale: >
+  The benchmark task is the original species-identification task, but the
+  ordered axis is temperature on a 0.1 C grid, not time (rule 2).
+known_issues:
+  - "Exactly one training example per class: 18 train series for 18 species (confirmed by the UCR briefing document, p. 34, which plots Fungi as 'One exemplar per class'). Cross-validation on the train split is impossible and any train-set tuning is meaningless; the 1-NN train error reported in the briefing document is 1.0 for this reason."
+  - >
+    Train and test share strains (checked 2026-11-02). The source's data set is
+    "204 melt curves generated from the 51 strains in Table 1, two independent
+    duplicate curves from each. Inclusion of the four curves from each strain
+    helped ensure that the method was robust against technical variations"
+    (Lu et al. 2017, Methods). The archive ships 204 curves (18 + 186), and each
+    species' pooled count is exactly four times its number of strains in Table 1
+    (nine species with 2 strains have 8 curves, five with 3 have 12, two with 4
+    have 16, two with 5 have 20). With one training curve per species, the
+    other three curves of every training strain are in the test set; these are
+    repeat measurements of the same DNA sample, not identical series (no exact
+    duplicates). Which test curves belong to which strain is not given, and
+    clustering the curves recovers the groups of four for only some species.
+    The source's own use was new strains: reference curves of the 51 strains
+    were matched against "243 previously identified clinical isolates".
+  - Test set is small (186) and class sizes are uneven across species.
+  - The archived window (201 points) does not exactly match the 76-94 C interval used in the paper (181 points at 0.1 C); a verifier should recover the actual temperature endpoints from the donor.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 1.0
+    acc_permuted: 0.9355
+    drop: 0.0645
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 5.0
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 1.0
+    acc_raw_values: 0.0376
+    acc_summary_stats: 0.0376
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.9624
+    gap_summary: 0.9624
+    seed: 0
+    runtime_s: 2.9
+    run: '2026-09-04'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=Fungi
+  - Lu et al., PLoS ONE 12(3) e0173320, 2017 (read) - https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0173320
+  - Dau et al., The UCR Time Series Archive briefing document, 2018 (read, p. 34 plot caption 'One exemplar per class')

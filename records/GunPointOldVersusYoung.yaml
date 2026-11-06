@@ -1,0 +1,168 @@
+name: GunPointOldVersusYoung
+archive:
+- UCR
+archive_type_tag: HAR
+n_train: 136
+n_test: 315
+series_length: 150
+n_channels: 1
+n_classes: 2
+archive_page:
+  description: 'This dataset is a remake of the famous GunPoint dataset released in 2003.
+    We strive to mimic in every aspect the recording of the original GunPoint. The actors
+    include one male and one female. They are the same actors who created the original GunPoint.  We
+    record two scenarios, Gun and Point (also known as Gun and NoGun). In each scenario, the
+    actors aim at a eye-level target. The difference between Gun and Point is that for the
+    Gun scenario, the actors hold a gun, and in the Point scenario, the actors point with
+    just their fingers. A complete Gun action involves the actor moves hand from an initial
+    rest position, points the gun at target, puts gun back to waist holster and then brings
+    free hand to the initial rest position. Each complete action conforms to a five-second
+    cycle. With 30fps, this translates into 150 frames per action. We extract the centroid
+    of the hand from each frame and use its x-axis coordinate to form a time series.  We refer
+    to the old GunPoint as GunPoint 2003 and the new GunPoint as Gunpoint 2018. We merged
+    GunPoint 2003 and GunPoint 2018 to make three datasets.  Let us denote: - G: Gun - P:
+    Point - M: Male - F: Female - 03: The year 2003 - 18: The year 2018  ## GunPointAgeSpan  The
+    task is to classify Gun and Point. There are 4 flavors of each class. - Class 1: Gun (FG03,
+    MG03, FG18, MG18) - Class 2: Point (FP03, MP03, FP18, MP18)   ## GunPointMaleVersusFemale  The
+    task is to classify Male and Female. There are 4 flavors of each class. - Class 1: Female
+    (FG03, FP03, FG18, FP18) - Class 2: Male (MG03, MP03, MG18, MP18)    ## GunPointOldVersusYoung  The
+    task is to classify the older and younger version of the actors. There are 4 flavors of
+    each class. - Class 1: Young (FG03, MG03, FP03, MP03) - Class 2: Old (FG18, MG18, FP18,
+    MP18)    There is nothing to infer from the order of examples in the train and test set.  Data
+    created by Ann Ratanamahatana and Eamonn Keogh. Data edited by Hoang Anh Dau.'
+  donated_by: A. Ratanamahatana,  E. Keogh
+  data_source_link: ''
+  second_link: ''
+original_problem:
+  description: >
+    In 2018 the creators of the 2003 GunPoint data set re-recorded it with the same
+    two actors. UCR briefing Sec. VI-C-1, p. 9: "The original GunPoint data set was
+    created by current authors Ratanamahatana and Keogh in 2003... As part of these
+    new release of the UCR Archive, we decided to revisit this problem, by asking the
+    two original actors to recreate the data." The recording protocol: "In the Gun
+    scenario, the actor holds a replica gun. They point the gun at the target, return
+    the gun back to the waist holster and then brings their free hand to a rest
+    position to complete an action. Each complete action conforms to a five-second
+    cycle. We filmed with a commodity smart-phone Samsung Galaxy 8. With 30fps, this
+    translates into 150 frames per action. We generated a time series for each action
+    by taking the x-axis location of the centroid of the red gloved hand." The two
+    recordings were then merged: "The data collected now spans two actors F,M, two
+    behaviors G,P, and two years 03,18... We have created three new data sets. Each
+    data set has two classes; each class is highly polymorphic with four variants
+    characterizing it."
+  prediction_target: which recording session a series comes from (2003 vs 2018), interpreted by the creators as the actors aging
+  input_as_originally_posed: >
+    video of the two actors performing gun-draw and point actions (2003 and 2018
+    sessions); the released signal is the x-coordinate of the hand centroid per frame
+  task_family: activity-recognition
+  # Kept consistent with datasets/GunPoint.yaml: the underlying data collection is the
+  # same gesture-recording study. Where the label is an actor attribute rather than the
+  # action, that is recorded under label_semantics_changed and known_issues instead of
+  # by changing the task family.
+  stakeholder_and_use: >
+    no external stakeholder: a curator-constructed probe of whether the two recording sessions are distinguishable
+  source: >
+    UCR briefing document (Dau et al., arXiv:1810.07758) Sec. VI-C-1, written by the
+    data's own creators, read in full; plus the timeseriesclassification.com
+    description page, which repeats the same account.
+  provenance_confidence: high
+translation:
+  transformation: [channel-selection]
+  what_the_x_axis_is: time
+  sampling: >
+    Video at 30 frames per second; each action is a five-second cycle, hence exactly
+    150 frames per series (UCR briefing Sec. VI-C-1, p. 9). One value per frame: the
+    x-coordinate of the hand centroid. No length normalization was needed - unlike
+    datasets/GunPoint.yaml, which lists resampling, the 2018 documentation shows the
+    length 150 is native (30 fps x 5 s).
+  information_lost_or_added: >
+    The 2D hand trajectory is reduced to its x-coordinate and the rest of the video is
+    discarded. Merging the 2003 and 2018 sessions adds a second source of variation
+    (equipment, tracking, 15 years of the actors) that is inside the data rather than
+    controlled.
+  label_semantics_changed: >
+    yes: the label is the year of recording (2003 vs 2018), not the gun/point action.
+    The creators are explicit that the target is the session and that its cause is
+    uncertain - UCR briefing Sec. VI-C-1, p. 9: "GunPointOldVersusYoung... asks if a
+    classifier can detect the difference between the recording sessions due to
+    (perhaps) the actors aging, differences in equipment and processing; though as
+    noted above, we tried to minimize such inconsistencies. In this case, the
+    classifier needs to ignore the action and actor."
+benchmark_task:
+  description: >
+    Classify a length-150 hand-motion series as coming from the 2003 or the 2018
+    recording session, pooling both actors and both actions on each side.
+  is_same_as_original: different-task
+verdict: native-tsc
+verdict_rationale: >
+  The underlying series are genuine time-indexed hand-motion traces; what changed is
+  that the curators re-labelled them by recording session rather than by action.
+known_issues:
+  - >
+    The label is the recording session, and the creators themselves list equipment and
+    processing differences alongside aging as possible causes. Reported accuracy should
+    never be read as evidence about aging without ruling those out; treat this data set
+    as a session/batch-effect detector.
+  - >
+    Near-ceiling baselines (1-NN ED error 0.0476, constrained DTW 0.0349 against a
+    0.4762 default rate, DataSummary.csv) are exactly what a batch effect predicts.
+  - >
+    "Old vs young" is two age points of the same two people, 15 years apart - four
+    (person, session) cells in total.
+  - >
+    Two actors only. Every actor-level attribute in these three data sets (sex, age,
+    build) is perfectly confounded with the identity of one specific person, so
+    nothing here measures generalisation to unseen people; with n=2 the "attribute"
+    framing is an interpretation, not a tested hypothesis.
+  - >
+    Normalization consistency across the two sessions is not established and matters a
+    lot here. UCR briefing Sec. III-C, p. 3: "For the new data sets in this release, we
+    provide the raw data without any normalization when possible", while the pre-2018
+    archive data are z-normalized. If the merged 2003/2018 files are not uniformly
+    normalized, separating the two sessions (GunPointOldVersusYoung) or the two actors
+    is trivially easy for reasons that have nothing to do with age or build. A human
+    verifier should check the released files directly.
+  - >
+    Recording equipment differs between the two sessions (2018 used a Samsung Galaxy 8
+    smartphone at 30 fps; the 2003 rig is not documented on the description page), and
+    the 2018 actors wore a red glove for tracking. Session, equipment and tracking
+    pipeline are all confounded with the "year" factor.
+  - >
+    The train/test splits cannot be actor- or session-disjoint: every class is defined
+    as a mixture of actor/year variants, so the same two people and the same two
+    recording sessions appear on both sides of every split.
+  - >
+    Shares raw material with GunPoint (2003 portion) and with the other two
+    GunPoint2018 data sets; results on the four are not independent.
+  - >
+    archive_type_tag: recorded here as HAR (site aggregate table); the archive's own
+    DataSummary.csv files these under "Motion" - the same discrepancy already noted in
+    datasets/GunPoint.yaml.
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 1.0
+    acc_permuted: 1.0
+    drop: 0.0
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 5.6
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 1.0
+    acc_raw_values: 0.981
+    acc_summary_stats: 1.0
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.019
+    gap_summary: 0.0
+    seed: 0
+    runtime_s: 2.8
+    run: '2026-09-04'
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=GunPointOldVersusYoung
+  - https://www.timeseriesclassification.com/description.php?Dataset=GunPoint
+  - Dau, Bagnall, Kamgar, Yeh, Zhu, Gharghabi, Ratanamahatana, Keogh, "The UCR Time Series Archive", arXiv:1810.07758 (PDF read; Sec. VI-C-1 "GunPoint data sets", Sec. III-C on normalization)
+  - UCR archive DataSummary.csv (baseline error rates and archive type tags), cached at scripts/sources/ucr_DataSummary.csv

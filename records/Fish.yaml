@@ -1,0 +1,122 @@
+name: Fish
+archive:
+- UCR
+archive_type_tag: IMAGE
+n_train: 175
+n_test: 175
+series_length: 463
+n_channels: 1
+n_classes: 7
+archive_page:
+  description: 'A set of Fish outlines originally used with contour matching in the
+
+    paper "Contour Matching for Fish Species Recognition and Migration
+
+    Monitoring" by D. Lee. Each class is a different species. Outlines
+
+    were derived at UCR.'
+  donated_by: D. Lee
+  data_source_link: http://link.springer.com/chapter/10.1007%2F978-3-540-78534-7_8
+  second_link: ''
+original_problem:
+  description: >
+    Automated fish species recognition for migration monitoring. Lee et al. built
+    FishID, a machine-vision system field-tested at Prosser Dam (Washington) to
+    replace manual counting of migrating fish at dam fishways; the published
+    abstract describes "a simple and accurate real-time contour matching
+    technique" for "fish species recognition and migration monitoring"; its field
+    test reports over 90% accuracy "in tests with up to four distinct species".
+    The species-recognition study on the donated shapes (SPIE 2004, below) used
+    seven species. Fisheries managers need per-species counts of fish passing a
+    dam to manage stocks and assess passage structures. The outlines used in the
+    archive were derived at UCR from that work's images.
+  prediction_target: fish species (7 classes)
+  input_as_originally_posed: image of a fish (in the deployed system, a video frame of a fish passing a viewing window)
+  task_family: image-classification
+  stakeholder_and_use: fisheries agencies and dam operators counting migrating fish by species
+  source: >
+    Lee, Archibald, Schoenberger, Dennis & Shiozawa, "Contour Matching for Fish
+    Species Recognition and Migration Monitoring", in Applications of
+    Computational Intelligence in Biology, Springer, 2008, pp. 183-207 - only
+    pp. 183-184 (Springer preview) were read; the rest is paywalled. Summary:
+    "we present results from a field test of the system at Prosser Dam in
+    Prosser, Washington. In tests with up to four distinct species, the algorithm
+    correctly determines the species with greater than 90 percent accuracy."
+    The data donors' study is the earlier SPIE version: Lee, Schoenberger,
+    Shiozawa, Xu & Zhan, "Contour Matching for a Fish Recognition and Migration
+    Monitoring System", SPIE Optics East 2004, vol. 5606 (author copy read in
+    full, 2026-11-02), Sec. 5.1: "Seven fish species that have similar shape
+    characters were chosen for study. They are Chinook Salmon (SA), Winter Coho
+    (WC), brown trout (BT), Bonneville cutthroat (BC), Colorado River cutthroat
+    trout (CRC), Yellowstone Cutthroat (YC) and mountain whitefish (WF). We used a
+    total of 64 images to generate shapes of these seven species"; Sec. 5.2: "Each
+    contour was used to compare against other contours in the data set" (best
+    accuracy 64%). Keogh et al. (VLDB 2006, expanded version) list "Fish 7 [classes]
+    350 [instances]" and write: "The data donors of the fish dataset tested many
+    shape descriptors ... to achieve the best error rate of 36.0% [19]", where [19]
+    is the SPIE 2004 paper.
+  provenance_confidence: medium
+
+translation:
+  transformation: [contour-unrolling, resampling, z-normalization]
+  what_the_x_axis_is: arc-length
+  sampling: >
+    463 points around the fish outline. Archive page: "A set of Fish outlines
+    originally used with contour matching... Outlines were derived at UCR"; the
+    exact reference point and traversal rule are undocumented.
+  information_lost_or_added: >
+    Colour, patterning and fin detail - all used in practice to tell species
+    apart - are discarded; only the silhouette remains. Absolute length is
+    removed by normalization even though size is a strong species cue. The
+    operational difficulties of the deployed system (occlusion, non-lateral
+    pose, motion blur) are absent from the curated outlines.
+  label_semantics_changed: "no"
+
+benchmark_task:
+  description: Classify a length-463 fish-outline series into one of seven species.
+  is_same_as_original: narrowed
+  # Same seven species as the donors' SPIE 2004 study, but on clean curated
+  # outlines rather than the in-situ video the system had to handle; the 2008
+  # chapter's field test covered up to four species.
+
+verdict: translated-modality
+verdict_rationale: >
+  A fish image reduced to its outline traversed by arc-length; the source
+  modality is an image and the ordering is spatial.
+known_issues:
+  - 175 train / 175 test with seven classes - 25 training instances per class.
+  - The 2008 chapter is paywalled (pp. 183-184 read); the donors' SPIE 2004 study was read and has the same seven species, but the outline-extraction step performed at UCR is undocumented, so the link between the archive series and the published images is unverified.
+  - SPIE 2004 generated its shapes from 64 images (10/8/10/7/10/10/9 per species), while the archive ships 350 outlines (Keogh et al. VLDB 2006 also list 350); how 64 images became 350 series is undocumented.
+  - Curated outlines drop the operational difficulty (pose, occlusion, water turbidity) that made the original problem hard, so archive accuracy says little about deployability.
+  - Size normalization removes a real discriminative cue for species.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.9771
+    acc_permuted: 0.8629
+    drop: 0.1143
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 5.0
+    run: '2026-09-03'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.9771
+    acc_raw_values: 0.7657
+    acc_summary_stats: 0.5886
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.2114
+    gap_summary: 0.3886
+    seed: 0
+    runtime_s: 3.3
+    run: '2026-09-03'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=Fish
+  - Lee, Archibald, Schoenberger, Dennis & Shiozawa, "Contour Matching for Fish Species Recognition and Migration Monitoring", Springer, 2008 - https://link.springer.com/chapter/10.1007/978-3-540-78534-7_8 (pp. 183-184 only)
+  - Lee, Schoenberger, Shiozawa, Xu & Zhan, "Contour Matching for a Fish Recognition and Migration Monitoring System", SPIE Optics East 2004, vol. 5606 - author copy https://web.archive.org/web/20060904030844id_/http://www.ece.byu.edu/roboticvision/fish/papers/SPIE_OEast_2004_Fish.pdf (read in full)
+  - Keogh, Wei, Xi, Vlachos, Lee, Protopapas, "LB_Keogh Supports Exact Indexing of Shapes under Rotation Invariance with Arbitrary Representations and Distance Measures", VLDB 2006, expanded version - http://www.cs.ucr.edu/~eamonn/VLDB2006_Expanded.pdf (Table 8 and the fish passage)
+  - Dau et al., "The UCR Time Series Archive", arXiv:1810.07758

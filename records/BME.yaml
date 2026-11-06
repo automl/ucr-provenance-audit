@@ -1,0 +1,95 @@
+name: BME
+archive:
+- UCR
+archive_type_tag: SIMULATED
+n_train: 30
+n_test: 150
+series_length: 128
+n_channels: 1
+n_classes: 3
+archive_page:
+  description: "BME (Begin-Middle-End) is a synthetic univariate data set with three classes:\
+    \  one class is characterized by a small positive bell arising at the initial period (Begin),\
+    \ one does not have any bell (Middle), one has a positive bell arising at the final period\
+    \ (End).  \n\n\n  All series are constituted by a central plate. The central plates may\
+    \ be positive or negative. The discriminant is the presence or absence of a positive peak,\
+    \ or at the beginning of series or at the end. \n\n\n  Class 1: Begin\n  Class 2: Middle\n\
+    \  Class 3: End   \n\n Data source: University Joseph Fourier (Grenoble I), Laboratoire\
+    \ d informatique de Grenoble(LIG), Equipe AMA"
+  donated_by: Joseph Fourier University
+  data_source_link: ''
+  second_link: ''
+original_problem:
+  description: >
+    No real-world problem exists. BME (Begin-Middle-End) is a synthetic
+    three-class benchmark: every series is a central plate (positive or
+    negative) and the class is decided by whether a small positive bell
+    appears at the start of the series, nowhere, or at the end. The archive
+    page is the only account of the generator; no publication defining it
+    was located.
+  prediction_target: which of three generated shapes produced the series (bell at start / no bell / bell at end)
+  input_as_originally_posed: synthetically generated signal
+  task_family: synthetic-demo
+  stakeholder_and_use: none (synthetic demo)
+  source: >
+    No publication found. The only provenance is the donor line on the
+    archive page: "Data source: University Joseph Fourier (Grenoble I),
+    Laboratoire d informatique de Grenoble(LIG), Equipe AMA"
+    (timeseriesclassification.com, BME; donated_by "Joseph Fourier
+    University"), with no data_source_link. The most likely origin is the
+    Grenoble AMA group of A. Douzal-Chouakria (candidate: Frambourg,
+    Douzal-Chouakria & Gaussier, "Learning Multiple Temporal Matching for
+    Time Series Classification", IDA 2013), but that full text could not be
+    reached (hal.science/hal-00908431 returns an access-denied page,
+    ResearchGate returns HTTP 403) and no source consulted states that BME
+    was introduced there. Nothing about the generator (bell amplitude,
+    width, noise model) is documented.
+  provenance_confidence: low
+
+translation:
+  transformation: [simulation]
+  what_the_x_axis_is: index
+  sampling: 128 generated points per series; no clock, no sampling rate is defined anywhere
+  information_lost_or_added: n/a (generated directly in series form)
+  label_semantics_changed: "no"
+
+benchmark_task:
+  description: Classify a univariate length-128 series as Begin, Middle or End.
+  is_same_as_original: no-original-exists
+
+verdict: synthetic
+verdict_rationale: >
+  Generated data with no underlying real-world task (task_family
+  synthetic-demo, rule 1); the label is the shape the generator drew.
+known_issues:
+  - No publication defines the generating process, so the difficulty of the problem cannot be reproduced or audited; the archive text is the entire documentation.
+  - Small train set (30 series, 3 classes) against 150 test series.
+  - Very likely paired with UMD (same donor line, same three-class "bell at the edge" design); results on the two should not be treated as independent evidence.
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 1.0
+    acc_permuted: 0.9333
+    drop: 0.0667
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 4.8
+    run: '2026-09-03'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 1.0
+    acc_raw_values: 0.3333
+    acc_summary_stats: 0.3333
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.6667
+    gap_summary: 0.6667
+    seed: 0
+    runtime_s: 5.7
+    run: '2026-09-03'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=BME
+  - "Frambourg, Douzal-Chouakria, Gaussier, \"Learning Multiple Temporal Matching for Time Series Classification\", IDA 2013 (candidate origin; full text NOT reached - HAL access denied, ResearchGate 403)"

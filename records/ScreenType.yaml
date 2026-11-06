@@ -1,0 +1,188 @@
+name: ScreenType
+archive:
+- UCR
+archive_type_tag: DEVICE
+n_train: 375
+n_test: 375
+series_length: 720
+n_channels: 1
+n_classes: 3
+archive_page:
+  description: These problems were taken from data recorded as part of government sponsored
+    study called Powering the Nation. The intention was to collect behavioural data about
+    how consumers use electricity within the home to help reduce the UK's carbon footprint.
+    The data contains readings from 251 households, sampled in two-minute intervals over a
+    month. Each series is length 720 (24 hours of readings taken every 2 minutes). Classes
+    are CRT TV, LCD TV and Computer Monitor
+  donated_by: J. Lines, A. Bagnall
+  data_source_link: https://www.uea.ac.uk/computing/machine-learning/elastic-ensembles
+  second_link: ''
+original_problem:
+  description: >
+    The data come from the UK Household Electricity Survey (HES; DECC, Defra
+    and the Energy Saving Trust, 2010-2011), a government study of domestic
+    electricity use in owner-occupier homes in England: "The intention was to
+    collect behavioural data about how consumers use electricity within the
+    home to help reduce the UK's carbon footprint" (Lines 2015 thesis, Sec.
+    3.2.2, p. 41). Electricians fitted wattmeters to individual appliances and
+    to some groups of appliances (Intertek final report, Sec. 2, p. 54).
+    Lines & Bagnall (UEA) then posed five appliance-classification problems
+    from these recordings: "We provide five new classification problems that
+    focus on domestic appliance classification from electricity consumption"
+    (thesis p. 41, Table 3.3); "These datasets were introduced into the
+    literature in [75]" (Lines & Bagnall, SDM 2014). The five are Computers,
+    LargeKitchenAppliances, RefrigerationDevices, ScreenType and
+    SmallKitchenAppliances. ElectricDevices is not one of them: it comes from
+    a different study, GEO's Visual Energy Trial (thesis Sec. 3.2, p. 38: the
+    household device datasets "arise from two different sources").
+  prediction_target: which display device produced the day's consumption trace (CRT TV, LCD TV, computer monitor)
+  input_as_originally_posed: one day of a wattmeter's readings on a CRT television, LCD television or computer monitor in a surveyed home
+  task_family: device-monitoring
+  stakeholder_and_use: >
+    The survey served UK energy policy (gov.uk HES collection page). The
+    curators' stated aim was to extract more information from smart-meter
+    data by "classifying appliances according to their electricity usage
+    profiles" (thesis p. 41). The benchmark gives an appliance trace that was
+    already metered on its own, so it is appliance recognition, not
+    disaggregation of a whole-house load.
+  source: >
+    J. Lines, "Time Series Classification through Transformation and
+    Ensembles", PhD thesis, UEA, 2015, Sec. 3.2.2 and Table 3.3 (pp. 41-42);
+    Lines & Bagnall, "Ensembles of elastic distance measures for time series
+    classification", SIAM SDM 2014, pp. 524-532 (introduces the five problems;
+    not read, no full text found); the survey: Intertek Report R66141,
+    "Household Electricity Survey: A study of domestic electrical product
+    usage", final report issue 4. Bagnall et al. 2017 (bake-off, Sec. 6.2)
+    attribute the problems to Lines & Bagnall 2015 (DMKD; not read).
+  provenance_confidence: high
+  # High for the original problem: the curators' thesis documents the source
+  # survey, the five problems and their classes. Not resolved: which
+  # households, appliances and days were selected, the split rule, and (for
+  # LargeKitchenAppliances) the numeric class codes; see known_issues.
+translation:
+  transformation:
+  - windowing
+  - z-normalization
+  what_the_x_axis_is: time
+  sampling: >
+    720 readings at 2-minute intervals, 24 hours per series (archive page:
+    "Each series is length 720 (24 hours of readings taken every 2
+    minutes)"). Whether each window starts at midnight is not documented.
+  information_lost_or_added: >
+    Each series is one day cut from a month (or, for some households, a year)
+    of metering, so context across days is lost and one appliance can supply
+    many series. The series are z-normalized (Dau et al. 2019, Sec. III-C:
+    "The time series are already z-normalized to remove offset and scaling";
+    measured 2026-11-02: every series has mean 0 and standard deviation 1), so
+    absolute power level and scale are removed.
+  label_semantics_changed: "no"
+  # Under settled policy L3 the survey's appliance annotations are the source
+  # task; the curators kept those appliance categories as classes.
+benchmark_task:
+  description: >
+    Classify a 720-point daily consumption profile as CRT TV, LCD TV or computer monitor.
+  is_same_as_original: "yes"
+  # The curators posed this classification problem themselves (thesis Sec.
+  # 3.2.2, Table 3.3); the archive ships it unchanged apart from the split.
+verdict: native-tsc
+verdict_rationale: >
+  Metered electricity consumption on a real time axis, with appliance classes
+  posed by the curators from the survey's own appliance annotations. The
+  curators chose the classes, the cases, the daily windows and the
+  normalization.
+known_issues:
+- >
+  Five datasets share the survey as their source: Computers,
+  LargeKitchenAppliances, RefrigerationDevices, ScreenType and
+  SmallKitchenAppliances (thesis Sec. 3.2.2, Table 3.3). No source says
+  whether they share households or appliances; no series is repeated across
+  the five (measured 2026-11-02). Inference: treating them as five
+  independent results may overstate the evidence, but how dependent they are
+  is not measured.
+- >
+  Which households and days were used is not documented. The archive page
+  and the thesis say 251 households sampled every 2 minutes over a month;
+  Intertek (p. 24) also says 251, while HES Report 5 (p. 4) and the gov.uk
+  page say 250. The 26 year-long households were recorded at 10-minute
+  intervals except from the end of November 2010 to the February 2011 visit,
+  when they recorded at 2-minute intervals (Intertek p. 64). Report 5's
+  summary ("10-minute intervals for the households participating for a
+  year") simplifies this.
+- >
+  Split: the curators state that from the earlier ElectricDevices work "we
+  found that if consumption data from a specific device in a given household
+  were included in both the training and testing data, bias was introduced
+  into classification results", and that this influenced the creation of
+  these datasets (thesis p. 41; also Sec. 5.1, p. 64: some datasets "have been
+  split in a certain manner to avoid introducing bias", naming these). They
+  do not state the rule used here, and the archive files carry no household
+  or device identifiers. (The household-exclusive rule in thesis Sec. 3.2.1
+  is stated for the Visual Energy Trial only.) Measured 2026-11-02:
+  750 unique series, no exact duplicates within or across the split; 125 series per class in each split; 1-NN Euclidean accuracy 0.360 on the shipped split vs 0.433 mean (0.363-0.477) over 30 random class-stratified re-splits, lower than every re-split. Inference: this
+  is consistent with the split keeping devices apart, but does not show it.
+- >
+  Labels: for every monitored product the installing electricians filled in
+  a spreadsheet with the appliance "selected from a dropdown list" (Intertek
+  Sec. 3.4, pp. 59-60). How those entries became the archive's classes is not
+  documented. The survey also metered some appliances in groups, e.g.
+  "computer sites which usually comprised a PC with any items such screens
+  and printers which were always switched on when the PC was used" (Intertek
+  p. 54, footnote 12); whether grouped channels entered this dataset is not
+  documented.
+- >
+  The classes mix two kinds of category: CRT and LCD are television
+  technologies, while "Computer Monitor" is a device role (thesis Table 3.3).
+  The curators put ScreenType among the problems "with similar usage
+  patterns", which "should be much harder" (thesis p. 41); the bake-off
+  reports ST 0.676, COTE 0.651 and BOSS 0.586 over its resamples (Bagnall et
+  al. 2017, Table 6). The survey also metered combined sockets such as TV+DVD
+  and Monitor+Printer (Intertek Table 15, p. 245); whether any entered this
+  dataset is not documented.
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.4613
+    acc_permuted: 0.4453
+    drop: 0.016
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 6.3
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.4613
+    acc_raw_values: 0.392
+    acc_summary_stats: 0.424
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.0693
+    gap_summary: 0.0373
+    seed: 0
+    runtime_s: 5.6
+    run: '2026-09-04'
+references:
+- https://www.timeseriesclassification.com/description.php?Dataset=ScreenType
+- >
+  J. Lines, "Time Series Classification through Transformation and
+  Ensembles", PhD thesis, University of East Anglia, 2015, Sec. 3.2 and
+  Table 3.3 - https://ueaeprints.uea.ac.uk/id/eprint/53360/1/2014LinesJPhD.pdf
+- >
+  Lines & Bagnall, "Ensembles of elastic distance measures for time series
+  classification", SIAM SDM 2014, pp. 524-532 (not read: no full text found);
+  companion site https://sites.google.com/site/sdm2014timeseries/ (Wayback
+  2020-10-23) lists "the five new problems that we introduce in this work"
+- >
+  Intertek Report R66141, "Household Electricity Survey: A study of domestic
+  electrical product usage", final report issue 4 (pp. 24, 54, 59-64, 245) -
+  https://assets.publishing.service.gov.uk/media/5a7c2fd940f0b67d0b11f6df/10043_R66141HouseholdElectricitySurveyFinalReportissue4.pdf
+- >
+  "Further Analysis of the Household Electricity Survey, Report 5: Lighting
+  study" (DECC/Defra/EST, 2013), Introduction p. 4 -
+  https://carltd.com/wp-content/uploads/2023/10/Report-5_-Lighting-study.pdf
+- https://www.gov.uk/government/collections/household-electricity-survey
+- >
+  Bagnall, Lines, Bostrom, Large, Keogh, "The great time series
+  classification bake off", DMKD 31(3), 2017 -
+  https://ueaeprints.uea.ac.uk/61045/4/GreatTimeSeriesClassificationBakeOff.pdf
+- Dau et al., "The UCR Time Series Archive", arXiv:1810.07758v2 (Sec. III-C on z-normalization)

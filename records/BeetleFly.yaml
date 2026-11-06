@@ -1,0 +1,109 @@
+name: BeetleFly
+archive:
+- UCR
+archive_type_tag: IMAGE
+n_train: 20
+n_test: 20
+series_length: 512
+n_channels: 1
+n_classes: 2
+archive_page:
+  description: MPEG-7 CE Shape-1 Part B is a database of binary images developed for testing
+    MPEG-7 shape descriptors, and is available free online. It is used for testing contour/image
+    and skeleton-based descriptors. Classes of images vary broadly, and include classes that
+    are similar in shape to one another. There are 20 instances of each class, and 60 classes
+    in total. We have extracted the outlines of these images and mapped them into 1-D series
+    of distances to the centre. Beetle/Fly is the problem of distinguishing between an outline
+    of a beetle and a fly
+  donated_by: J. Hills, A. Bagnall
+  data_source_link: http://www.dabi.temple.edu/~shape/MPEG7/dataset.html
+  second_link: ''
+original_problem:
+  description: >
+    The images come from MPEG-7 Core Experiment CE-Shape-1 Part B, a database
+    built to benchmark 2D shape descriptors for the MPEG-7 standard - not to
+    solve an applied recognition problem. Latecki et al. (CVPR 2000) describe
+    the experiment: "The Core Experiment CE-Shape-1 for shape descriptors
+    performed for the MPEG-7 standard gave a unique opportunity to compare
+    various shape descriptors for non-rigid shapes with a single closed
+    contour" (Abstract), and Part B is a retrieval benchmark: "The total number
+    of images in the database is 1400: 70 classes of various shapes, each class
+    with 20 images. Each image was used as a query, and the number of similar
+    images (which belong to the same class) was counted in the top 40 matches
+    (bulls-eye test)" (Sec. 2.2). UEA curators later carved out the two-class
+    BeetleFly problem: distinguishing an outline of a beetle and a fly.
+  prediction_target: which of the two shape classes the silhouette belongs to (beetle vs fly)
+  input_as_originally_posed: binary silhouette image with a single closed outer contour
+  task_family: image-classification
+  stakeholder_and_use: >
+    none applied; the collection exists to evaluate shape descriptors for the
+    MPEG-7 standard, and this two-class subset exists to test TSC algorithms
+  source: >
+    Latecki, Lakamper & Eckhardt, "Shape Descriptors for Non-rigid Shapes with
+    a Single Closed Contour", CVPR 2000 (read), which reports the MPEG-7 Core
+    Experiment CE-Shape-1 that produced the image database; the outlines were
+    extracted and mapped to series by Hills & Bagnall at UEA (shapelet-transform
+    work), whose paper was not reachable in full text.
+  provenance_confidence: high
+
+translation:
+  transformation: [contour-unrolling, resampling, z-normalization]
+  what_the_x_axis_is: arc-length
+  sampling: >
+    Archive page: "We have extracted the outlines of these images and mapped
+    them into 1-D series of distances to the centre." 512 points per outline.
+  information_lost_or_added: >
+    Only the outer closed contour survives; the shapes were already stylised
+    silhouettes with no interior detail. Absolute size is removed by
+    z-normalization. Rotation of the original object becomes a cyclic shift of
+    the series, so the representation is not rotation invariant even though the
+    CE-Shape-1 task explicitly demanded rotation invariance of descriptors.
+  label_semantics_changed: "no"
+
+benchmark_task:
+  description: Classify a length-512 outline series as beetle or fly.
+  is_same_as_original: different-task
+  # The CE-Shape-1 task was similarity-based retrieval over 70 classes
+  # (bulls-eye test); UCR poses a supervised two-class classification instead.
+
+verdict: translated-modality
+verdict_rationale: >
+  A binary shape image re-expressed as distance-to-centre against contour
+  arc-length; nothing about the data or the task is temporal.
+known_issues:
+  - 20 train / 20 test - among the smallest problems in the archive; a single misclassification moves accuracy by 5%.
+  - Classes were deliberately chosen from CE-Shape-1 because they are similar in shape, so the problem is a curator-designed hard pair rather than a natural task.
+  - Same source pool as BirdChicken and ShapesAll; the beetle and fly classes may also appear inside ShapesAll's 60 classes, which would make the datasets non-independent (worth checking against the released files).
+  - Original CE-Shape-1 protocol was retrieval, not classification, so archive accuracies are not comparable to the shape-descriptor literature.
+
+
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.85
+    acc_permuted: 0.75
+    drop: 0.1
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 7.4
+    run: '2026-09-03'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.85
+    acc_raw_values: 0.5
+    acc_summary_stats: 0.5
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.35
+    gap_summary: 0.35
+    seed: 0
+    runtime_s: 2.8
+    run: '2026-09-03'
+
+references:
+  - https://www.timeseriesclassification.com/description.php?Dataset=BeetleFly
+  - Latecki, Lakamper & Eckhardt, "Shape descriptors for non-rigid shapes with a single closed contour", CVPR 2000 - https://cis.temple.edu/~latecki/Papers/cvpr00.pdf
+  - MPEG-7 CE Shape-1 Part B dataset page - http://www.dabi.temple.edu/~shape/MPEG7/dataset.html
+  - Hills, Lines, Baranauskas, Mapp & Bagnall, "Classification of time series by shapelet transformation", DMKD 28:851-881, 2014 (full text not reached)
+  - Dau et al., "The UCR Time Series Archive", arXiv:1810.07758

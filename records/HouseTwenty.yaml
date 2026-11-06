@@ -1,0 +1,134 @@
+name: HouseTwenty
+archive:
+- UCR
+archive_type_tag: DEVICE
+n_train: 40
+n_test: 119
+series_length: 2000
+n_channels: 1
+n_classes: 2
+archive_page:
+  description: The collection of this data was part of the project titled Personalised Retrofit
+    Decision Support Tools for UK Homes using Smart Home Technology (REFIT). The REFIT dataset
+    includes data from 20 households from Loughborough area over the period 2013-2014 (see
+    [1], [2]).   We use data of House 20 to make one dataset. There are two classes. The first
+    class is household aggregate usage of electricity. The second class is aggregate electricity
+    load of Tumble Dryer and Washing Machine.  Data created by David Murray et al. (see [2]).
+    Data edited by Shaghayegh Gharghabi, Hoang Anh Dau and Eamonn Keogh.  [1]  (Link Here)   [2]
+    Murray, David et al., "A data management platform for personalised real-time energy feedback",
+    Proceedings of the 8th International Conference on Engery Efficiency in Domestic Appliances
+    and Lighting, 2015.
+  donated_by: E. Keogh, S. Gharghabi
+  data_source_link: http://www.refitsmarthomes.org/
+  second_link: ''
+original_problem:
+  description: >
+    The data come from the REFIT electrical load measurements study, which
+    continuously monitored whole-house aggregate load plus nine individual
+    appliances in each of 20 UK households at 8-second intervals over two years.
+    REFIT metered 20 homes in the Loughborough area (2013-2014) to produce
+    smart-meter-like data for energy services -- the paper lists the intended
+    uses as "load shifting", "retrofit advice, i.e., installing replacement
+    appliances or energy savings measures", "smart home automation" and
+    "activity recognition" (Background & Summary). No classification task was
+    posed by the project itself; the UCR datasets were cut from these recordings
+    by Gharghabi, Dau and Keogh.
+    This dataset uses House 20 only, contrasting the whole-house aggregate
+    signal against the summed load of the tumble dryer and washing machine.
+  prediction_target: >
+    whether a power trace is the household's whole-house aggregate demand or the
+    combined demand of just the tumble dryer and washing machine
+  input_as_originally_posed: 8-second-interval active-power readings from the house meter and appliance submeters
+  task_family: device-monitoring
+  stakeholder_and_use: >
+    REFIT targets energy feedback and retrofit advice; separating appliance load
+    from whole-house load is the core of non-intrusive load monitoring, though
+    the two-class version here is a curator-built benchmark rather than a
+    deployed formulation.
+  source: >
+    REFIT project ("Personalised Retrofit Decision Support Tools for UK Homes
+    using Smart Home Technology"); primary data descriptor read: Murray,
+    Stankovic & Stankovic, "An electrical load measurements dataset of United
+    Kingdom households from a two-year longitudinal study", Scientific Data 4,
+    160122 (2017), Abstract: "The REFIT electrical load measurements dataset
+    described in this paper includes whole house aggregate loads and nine
+    individual appliance measurements at 8-second intervals per house, collected
+    continuously over a period of two years from 20 houses." 
+    Curation (House 20; aggregate vs tumble-dryer+washing-machine) is documented
+    only on the timeseriesclassification.com page, attributed to Gharghabi, Dau
+    and Keogh; the UCR briefing document does not discuss HouseTwenty.
+  provenance_confidence: medium
+translation:
+  transformation:
+  - windowing
+  - concatenation
+  what_the_x_axis_is: time
+  sampling: >
+    2000 consecutive readings per series; at REFIT's native 8-second rate that
+    is roughly 4.5 hours per series. The curators do not state a resampling
+    factor.
+  information_lost_or_added: >
+    Class 2 is not a measured signal but an arithmetic sum of two submeter
+    channels, so it is a constructed quantity; class 1 is the measured
+    whole-house aggregate, which contains that same appliance load plus
+    everything else. The two classes are therefore nested rather than disjoint
+    sources, and the discriminating cue may simply be the presence of baseline
+    load from other appliances. All series are windows of one household's
+    continuous recording.
+  label_semantics_changed: >
+    yes: the label is which metering channel (or channel sum) the window was
+    taken from, defined by the curators; REFIT itself posed no classification
+    task.
+benchmark_task:
+  description: >
+    Classify a 2000-point power window from REFIT House 20 as whole-house
+    aggregate load or as the combined tumble-dryer/washing-machine load.
+  is_same_as_original: different-task
+verdict: native-tsc
+verdict_rationale: >
+  Real 8-second household power metering on a genuine time axis; the reservation
+  is the curator-defined, partly synthetic (summed-channel) label, not the
+  modality.
+known_issues:
+- 'Stats: shipped files have 40 train / 119 test, length 2000 (verified by download), matching UCR DataSummary; the archive description page says 34/101, length 3000 (an older version).'
+- >
+  All series come from a single household (REFIT House 20) over one monitoring
+  period, so the result says nothing about transfer to other homes.
+- >
+  Class 2 is a constructed signal (sum of two appliance channels) and is
+  physically a component of class 1's whole-house aggregate; the classes are not
+  independent sources.
+- >
+  Instances are windows of one continuous recording, so train/test independence
+  is questionable, and the test set is small (119).
+- >
+  Shares its raw source (REFIT, Murray et al.) with FreezerRegularTrain /
+  FreezerSmallTrain, though a different house.
+empirical:
+  permutation_test:
+    model: aeon 1.1.0 MiniRocketClassifier (default RidgeClassifierCV), default split
+    acc_original: 0.958
+    acc_permuted: 0.8908
+    drop: 0.0672
+    permutation: one fixed permutation of the time axis, numpy default_rng(0), applied to train, test
+      and all channels
+    seed: 0
+    variant: aeon default (_eq / _nmv when shipped)
+    runtime_s: 6.1
+    run: '2026-09-04'
+  tabular_baseline:
+    model: sklearn 1.6.1 HistGradientBoostingClassifier (defaults) vs the MiniRocket above
+    acc_minirocket: 0.958
+    acc_raw_values: 0.7143
+    acc_summary_stats: 0.7059
+    summary_stats: 'per channel: mean, sd, min, max, q10, q25, q50, q75, q90, skew, kurtosis'
+    gap_raw: 0.2437
+    gap_summary: 0.2521
+    seed: 0
+    runtime_s: 3.2
+    run: '2026-09-04'
+references:
+- https://www.timeseriesclassification.com/description.php?Dataset=HouseTwenty
+- Murray, Stankovic & Stankovic, "An electrical load measurements dataset of United Kingdom households from a two-year longitudinal study", Scientific Data 4, 160122 (2017), https://www.nature.com/articles/sdata2016122
+- Murray et al., "A data management platform for personalised real-time energy feedback", EEDAL 2015 (cited by the archive page; not read)
+- http://www.refitsmarthomes.org/
